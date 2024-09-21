@@ -3,6 +3,7 @@ import requests
 import validators
 
 from ansifier import ImageFilePrinter
+from PIL import UnidentifiedImageError
 
 
 # https://github.com/amminer/ansifier#Usage
@@ -30,14 +31,17 @@ def image_url_to_html_text(request):
         `make_response`
         <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
     """
-    request_json = request.get_json()
+    request_json = request.get_json(silent=True)
+
+    if request_json is None:
+        return serve_UI()
 
     image_url = None
-    if request_json and "imageURL" in request_json:
+    if "imageURL" in request_json:
         image_url = request_json["imageURL"]
 
     format = None
-    if request_json and "format" in request_json:
+    if "format" in request_json:
         format = request_json["format"]
 
     message = "unable to process your request ¯\_(ツ)_/¯"
@@ -51,13 +55,21 @@ def image_url_to_html_text(request):
     if status:
         status, message = save_image(message)
     if status:
-        _, message = process_imagefile(format)
+        _, message = process_imagefile(format, image_url)
     return message
 
 
-def process_imagefile(format):
-    image_printer = ImageFilePrinter(IMAGE_FILEPATH, output_format=format)
-    return (True, image_printer.output)
+def process_imagefile(format, image_url):
+    ret = (False, "failed to process image ¯\_(ツ)_/¯")
+    try:
+        image_printer = ImageFilePrinter(IMAGE_FILEPATH, output_format=format)
+
+        ret = (True, image_printer.output)
+    except UnidentifiedImageError as e:
+        ret = (False, f"ERROR: {image_url} does not appear to be an image file")
+    except Exception as e:
+        ret = (False, 'ERROR: ' + str(e))
+    return ret
 
 def save_image(content):
     ret = (False, "failed to process image ¯\_(ツ)_/¯")
@@ -77,7 +89,7 @@ def download_url(url):
         s = requests.session()
         head_r = s.head(url)
         if head_r.status_code < 200 or head_r.status_code > 299:
-            raise ValueError(head_r)
+            raise ValueError(f"image url returned code {head_r.status_code}")
         size = int(head_r.headers.get('Content-Length', 0))
         if size > MAX_FILESIZE_B:
             raise ValueError(f"File must not exceed {MAX_FILESIZE_MB} MB")
@@ -114,4 +126,11 @@ def validate_format(format):
         ret = (True, "")
     except Exception as e:
         ret = (False, 'ERROR: ' + str(e))
+    return ret
+
+
+def serve_UI():
+    ret = "<html><body>Something went wrong ¯\_(ツ)_/¯</body></html>"
+    with open('./index.html', 'r') as rf:
+        ret = '\n'.join(rf.readlines())
     return ret

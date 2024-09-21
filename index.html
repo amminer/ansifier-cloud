@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <title>Image URL to HTML Text</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Image URL to HTML Text Converter</h1>
+      
+      <form id="imageForm">
+        <label for="imageURL">Image URL:</label>
+        <input type="text" id="imageURL" name="imageURL" required>
+        
+        <label for="format">Output Format:</label>
+        <select id="format" name="format" required>
+          <option value="ansi-escaped">ANSI Escaped</option>
+          <option value="html/css">HTML/CSS</option>
+        </select>
+        
+        <input type="submit" value="Submit">
+      </form>
+      
+      <div id="result"></div>
+    </div>
+    
+    <script>
+      document.getElementById('imageForm').onsubmit = async function(event) {
+        event.preventDefault();
+        
+        const imageURL = document.getElementById('imageURL').value;
+        const format = document.getElementById('format').value;
+        
+        const response = await fetch('/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageURL, format })
+        });
+        
+        const result = await response.text();
+        document.getElementById('result').innerHTML = `<pre>${result}</pre>`;
+      };
+    </script>
+  </body>
+</html>
+
