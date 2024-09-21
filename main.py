@@ -21,7 +21,7 @@ MAX_FILESIZE_B = 1024 * MAX_FILESIZE_KB
 
 
 @functions_framework.http
-def image_url_to_html_text(request):
+def image_url_to_text(request):
     """
     Args:
         request (flask.Request): The request object.

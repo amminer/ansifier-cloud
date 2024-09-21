@@ -1,10 +1,13 @@
 <html>
   <head>
-    <title>Image URL to HTML Text</title>
+    <title>ansifier</title>
   </head>
   <body>
     <div class="container">
-      <h1>Image URL to HTML Text Converter</h1>
+      <h1>ansifier</h1>
+	  <p>Convert image files to styled HTML or ansi-escaped text<br/>
+	  for display in text-only browsers and terminals, respectively;<br/>
+	  A web wrapper for <a href="https://github.com/amminer/ansifier">ansifier</a></p>
       
       <form id="imageForm">
         <label for="imageURL">Image URL:</label>
@@ -20,6 +23,7 @@
       </form>
       
       <div id="result"></div>
+      <a id="downloadBtn" style="display: none;">Download Output</a>
     </div>
     
     <script>
@@ -30,6 +34,7 @@
         const format = document.getElementById('format').value;
         
         const response = await fetch('/', {
+        //const response = await fetch('https://us-central1-ansifier.cloudfunctions.net/ansifier', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageURL, format })
@@ -37,6 +42,15 @@
         
         const result = await response.text();
         document.getElementById('result').innerHTML = `<pre>${result}</pre>`;
+
+        // Create a data URL for the output
+        const dataUrl = 'data:text/plain;charset=utf-8,' + encodeURIComponent(result);
+
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.href = dataUrl;
+        downloadBtn.download = format === 'html/css'? 'output.html' : 'output.txt';
+        downloadBtn.innerText = 'Download Output';
+        downloadBtn.style.display = 'inline';
       };
     </script>
   </body>

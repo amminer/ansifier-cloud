@@ -1,1 +1,4 @@
+functions-framework==3.*
+requests
 validators
+ansifier
