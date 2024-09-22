@@ -29,7 +29,9 @@
     <script>
       document.getElementById('imageForm').onsubmit = async function(event) {
         event.preventDefault();
-        
+
+        document.getElementById('result').innerHTML = `<pre>processing request...</pre>`;
+
         const imageURL = document.getElementById('imageURL').value;
         const format = document.getElementById('format').value;
         
