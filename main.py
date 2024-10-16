@@ -44,7 +44,11 @@ def image_url_to_text(request):
     if "format" in request_json:
         format = request_json["format"]
 
-    message = "unable to process your request ¯\_(ツ)_/¯"
+    image_file = None  # TODO take file POSTs
+    if "imageFile" in request_json:
+        image_file = request_json["imageFile"]
+
+    message = r"unable to process your request ¯\_(ツ)_/¯"
     status = False
     if image_url is not None and format is not None:
         status, message = validate_format(format)
@@ -60,19 +64,20 @@ def image_url_to_text(request):
 
 
 def process_imagefile(format, image_url):
-    ret = (False, "failed to process image ¯\_(ツ)_/¯")
+    ret = (False, r"failed to process image ¯\_(ツ)_/¯")
     try:
         image_printer = ImageFilePrinter(IMAGE_FILEPATH, output_format=format)
 
         ret = (True, image_printer.output)
     except UnidentifiedImageError as e:
-        ret = (False, f"ERROR: {image_url} does not appear to be an image file")
+        ret = (False, f"ERROR: {image_url} does not appear to be an image")
     except Exception as e:
         ret = (False, 'ERROR: ' + str(e))
     return ret
 
+
 def save_image(content):
-    ret = (False, "failed to process image ¯\_(ツ)_/¯")
+    ret = (False, r"failed to process image ¯\_(ツ)_/¯")
     try:
         with open(IMAGE_FILEPATH, 'wb') as wf:
             wf.write(content)
@@ -84,7 +89,7 @@ def save_image(content):
 
 
 def download_url(url):
-    ret = (False, "failed to download image ¯\_(ツ)_/¯")
+    ret = (False, r"failed to download image ¯\_(ツ)_/¯")
     try:
         s = requests.session()
         head_r = s.head(url)
@@ -102,7 +107,7 @@ def download_url(url):
 
 
 def validate_url(url):
-    ret = (False, "no valid image URL provided ¯\_(ツ)_/¯")
+    ret = (False, r"no valid image URL provided ¯\_(ツ)_/¯")
     try:
         if not validators.url(url):
             raise ValueError("valid URL must be supplied")
@@ -118,7 +123,7 @@ def validate_url(url):
 
 
 def validate_format(format):
-    ret = (False, "invalid format ¯\_(ツ)_/¯")
+    ret = (False, r"invalid format ¯\_(ツ)_/¯")
     try:
         if not format in FORMATS:
             raise ValueError(f"Format must be one of {FORMATS}")
@@ -130,7 +135,7 @@ def validate_format(format):
 
 
 def serve_UI():
-    ret = "<html><body>Something went wrong ¯\_(ツ)_/¯</body></html>"
+    ret = r"<html><body>Something went wrong ¯\_(ツ)_/¯</body></html>"
     with open('./index.html', 'r') as rf:
         ret = '\n'.join(rf.readlines())
     return ret
