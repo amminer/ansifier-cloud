@@ -7,21 +7,21 @@ from PIL import UnidentifiedImageError
 
 
 # https://github.com/amminer/ansifier#Usage
-FORMATS = ['ansi-escaped', 'html/css']
+FORMATS = ["ansi-escaped", "html/css"]
 # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
 FILE_EXTENSIONS = [ "blp", "bmp", "dds", "dib", "eps", "gif", "icns", "ico", "im", "jpeg", "jpg",
                    "msp", "pcx", "pfm", "png", "ppm", "sgi", "spider", "tga", "tiff", "webp", "xbm",
                    "cur", "dcx", "fits", "fli", "flc", "fpx", "ftex", "gbr", "gd", "imt",
                    "iptc/naa", "mcidas", "mic", "mpo", "pcd", "pixar", "psd", "qoi", "sun", "wal",
                    "wmf", "emf", "xpm", "palm", "pdf", "bufr", "grib", "hdf5", "mpeg" ]
-IMAGE_FILEPATH = 'IMAGEFILE'
+IMAGE_FILEPATH = "IMAGEFILE"
 MAX_FILESIZE_MB = 5
-MAX_FILESIZE_KB = 1024 * MAX_FILESIZE_MB
-MAX_FILESIZE_B = 1024 * MAX_FILESIZE_KB
+MAX_FILESIZE_KB = 1000 * MAX_FILESIZE_MB
+MAX_FILESIZE_B = 1000 * MAX_FILESIZE_KB
 
 
 @functions_framework.http
-def image_url_to_text(request):
+def main(request):
     """
     Args:
         request (flask.Request): The request object.
@@ -31,39 +31,60 @@ def image_url_to_text(request):
         `make_response`
         <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
     """
-    request_json = request.get_json(silent=True)
+    received_json = request.get_json(silent=True)
+    received_file = request.files["file"] if "file" in request.files else None
 
-    if request_json is None:
-        return serve_UI()
+    if received_file is not None:
+        format = request.form.get("format")
+        return file_flow(received_file, format)
 
-    image_url = None
-    if "imageURL" in request_json:
-        image_url = request_json["imageURL"]
+    if received_json is not None:
+        return url_flow(received_json)
 
-    format = None
-    if "format" in request_json:
-        format = request_json["format"]
+    return serve_UI()
 
-    image_file = None  # TODO take file POSTs
-    if "imageFile" in request_json:
-        image_file = request_json["imageFile"]
 
-    message = r"unable to process your request ¯\_(ツ)_/¯"
+def file_flow(received_file, format):
+    """
+    :param received_file: werkzeug.FileStorage
+    """
+    message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
     status = False
-    if image_url is not None and format is not None:
-        status, message = validate_format(format)
-    if status:
-        status, message = validate_url(image_url)
-    if status:
-        status, message = download_url(image_url)
-    if status:
-        status, message = save_image(message)
-    if status:
-        _, message = process_imagefile(format, image_url)
+    try:
+        if received_file is not None and format is not None:
+            status, message = validate_format(format)
+        if status:
+            status, message = save_image_werkzeug(received_file)
+        if status:
+            _, message = process_imagefile(format, "the file you uploaded")
+    except Exception as e:
+        message = message + "\n" + str(e)
+    return message
+
+
+def url_flow(received_json):
+    message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
+    image_url = received_json.get("imageURL")
+    format = received_json.get("format")
+    status = False
+    try:
+        if image_url is not None and format is not None:
+            status, message = validate_format(format)
+        if status:
+            status, message = validate_url(image_url)
+        if status:
+            status, message = download_url(image_url)
+        if status:
+            status, message = save_image_bytes(message)
+        if status:
+            _, message = process_imagefile(format, image_url)
+    except Exception as e:
+        message = message + "\n" + str(e)
     return message
 
 
 def process_imagefile(format, image_url):
+
     ret = (False, r"failed to process image ¯\_(ツ)_/¯")
     try:
         image_printer = ImageFilePrinter(IMAGE_FILEPATH, output_format=format)
@@ -72,19 +93,34 @@ def process_imagefile(format, image_url):
     except UnidentifiedImageError as e:
         ret = (False, f"ERROR: {image_url} does not appear to be an image")
     except Exception as e:
-        ret = (False, 'ERROR: ' + str(e))
+        ret = (False, "ERROR: " + str(e))
     return ret
 
 
-def save_image(content):
+def save_image_werkzeug(image):
+    ret = (False, r"failed to process image ¯\_(ツ)_/¯")
+    file_size = len(image.read())
+    image.seek(0)
+    try:
+        if file_size > MAX_FILESIZE_B:
+            raise ValueError(f"File is ~{file_size//1000/1000} MB, must not exceed {MAX_FILESIZE_MB} MB")
+        image.save(IMAGE_FILEPATH)  # TODO may be reading into memory twice here
+
+        ret = (True, "")
+    except Exception as e:
+        ret = (False, "ERROR: " + str(e))
+    return ret
+
+
+def save_image_bytes(content):
     ret = (False, r"failed to process image ¯\_(ツ)_/¯")
     try:
-        with open(IMAGE_FILEPATH, 'wb') as wf:
+        with open(IMAGE_FILEPATH, "wb") as wf:
             wf.write(content)
 
         ret = (True, "")
     except Exception as e:
-        ret = (False, 'ERROR: ' + str(e))
+        ret = (False, "ERROR: " + str(e))
     return ret
 
 
@@ -95,14 +131,14 @@ def download_url(url):
         head_r = s.head(url)
         if head_r.status_code < 200 or head_r.status_code > 299:
             raise ValueError(f"image url returned code {head_r.status_code}")
-        size = int(head_r.headers.get('Content-Length', 0))
+        size = int(head_r.headers.get("Content-Length", 0))
         if size > MAX_FILESIZE_B:
             raise ValueError(f"File must not exceed {MAX_FILESIZE_MB} MB")
         content_r = s.get(url, timeout=10)
 
         ret = (True, content_r.content)
     except Exception as e:
-        ret = (False, 'ERROR: ' + str(e))
+        ret = (False, "ERROR: " + str(e))
     return ret
 
 
@@ -118,7 +154,7 @@ def validate_url(url):
 
         ret = (True, "")
     except Exception as e:
-        ret = (False, 'ERROR: ' + str(e))
+        ret = (False, "ERROR: " + str(e))
     return ret
 
 
@@ -130,12 +166,12 @@ def validate_format(format):
 
         ret = (True, "")
     except Exception as e:
-        ret = (False, 'ERROR: ' + str(e))
+        ret = (False, "ERROR: " + str(e))
     return ret
 
 
 def serve_UI():
     ret = r"<html><body>Something went wrong ¯\_(ツ)_/¯</body></html>"
-    with open('./index.html', 'r') as rf:
-        ret = '\n'.join(rf.readlines())
+    with open("./index.html", "r") as rf:
+        ret = "".join(rf.readlines())
     return ret

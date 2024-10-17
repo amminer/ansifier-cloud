@@ -22,17 +22,19 @@
 		<p class="separator"> & </p>
         
 		<div class="requiredSet">
+
 		<div class="input">
-        <label for="imageURL">Image URL:</label>
-        <input class="fileInput" type="text" id="imageURL" name="imageURL">
+          <label for="imageFile">Image File:</label>
+          <input class="fileInput" type="file" id="imageFile" name="imageFile">
 		</div>
 
 		<p class="separator"> or </p>
 
-		<div class="input disabled" inert>
-        <label for="imageFile">Image File:</label>
-        <input class="fileInput" type="file" id="imageFile" name="imageFile">
+		<div class="input">
+          <label for="imageURL">Image URL:</label>
+          <input class="fileInput" type="text" id="imageURL" name="imageURL">
 		</div>
+
 		</div>
 
         <input id="submit" type="submit" value="Submit">
@@ -43,33 +45,57 @@
     </div>
     
     <script>
-      document.getElementById('imageForm').onsubmit = async function(event) {
+      document.getElementById("imageForm").onsubmit = async function(event) {
         event.preventDefault();
 
-        document.getElementById('result').innerHTML = `<pre>processing request...</pre>`;
+        document.getElementById("result").innerHTML = `<pre>processing request...</pre>`;
 
-        const format = document.getElementById('format').value;
-        const imageURL = document.getElementById('imageURL').value;
-        const imageFilePath = document.getElementById('imageFile').value;  //TODO POST file
+		//const remote = "https://ansifier.com/"
+		const remote = "/";
+        const format = document.getElementById("format").value;
+        const imageURL = document.getElementById("imageURL").value;
+		const fileInput = document.getElementById("imageFile")
+        const imageFilePath = fileInput.value;
+		const file = fileInput.files ? fileInput.files[0] : null;
+		var response = {
+			status: 400,
+			text: async() => "ERROR: Please provide a file or URL as input"
+		};
 
-        const response = await fetch('/', {
-        //const response = await fetch('https://ansifier.com', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageURL, format })
-        });
+		if (imageFilePath != "") {
+			fileInput.value = "";
+			console.log("POSTing file", imageFilePath);
+			const formData = new FormData();
+			formData.append("file", file);
+			formData.append("format", format);
+			response = await fetch(remote, {
+			  method: "POST",
+			  body: formData
+			});
+
+		} else if (imageURL != "") {
+			console.log("POSTing url", imageURL);
+			response = await fetch(remote, {
+			  method: "POST",
+			  headers: { "Content-Type": "application/json" },
+			  body: JSON.stringify({ imageURL, format })
+			});
+		}
         
-        const result = await response.text();
-        document.getElementById('result').innerHTML = `<pre style="display: flex; justify-content: center;">${result}</pre>`;
+        var result = await response.text();
+		document.getElementById("result").innerHTML = `<pre style="display: flex; justify-content: center;">${result}</pre>`;
+		const downloadBtn = document.getElementById("downloadBtn");
 
-        // Create a data URL for the output
-        const dataUrl = 'data:text/plain;charset=utf-8,' + encodeURIComponent(result);
+		if (! result.startsWith("ERROR:")) {
+			const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(result);
+			downloadBtn.href = dataUrl;
+			downloadBtn.download = format === "html/css"? "output.html" : "output.txt";
+			downloadBtn.innerText = "Download Output";
+			downloadBtn.style.display = "inline";
 
-        const downloadBtn = document.getElementById('downloadBtn');
-        downloadBtn.href = dataUrl;
-        downloadBtn.download = format === 'html/css'? 'output.html' : 'output.txt';
-        downloadBtn.innerText = 'Download Output';
-        downloadBtn.style.display = 'inline';
+			} else {
+				downloadBtn.style.display = "none";
+			}
       };
     </script>
   </body>
@@ -79,6 +105,7 @@
 <!-- CSS -->
 
 <style>
+
 .disabled {
 	color: gray;
 	text-decoration: line-through;
@@ -151,7 +178,7 @@ form > * {
 }
 
 .requiredSet:before {
-	content: '{';
+	content: "{";
 	position: absolute;
 	top: 42%;
 	left: 0px;
@@ -159,7 +186,7 @@ form > * {
 }
 
 .requiredSet:after {
-	content: '}';
+	content: "}";
 	position: absolute;
 	top: 42%;
 	right: 0px;
