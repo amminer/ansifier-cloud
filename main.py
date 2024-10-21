@@ -2,7 +2,7 @@ import functions_framework
 import requests
 import validators
 
-from ansifier import ImageFilePrinter
+from ansifier import ansify
 from PIL import UnidentifiedImageError
 
 
@@ -87,9 +87,9 @@ def process_imagefile(format, image_url):
 
     ret = (False, r"failed to process image ¯\_(ツ)_/¯")
     try:
-        image_printer = ImageFilePrinter(IMAGE_FILEPATH, output_format=format)
+        output = ansify(IMAGE_FILEPATH, output_format=format)[0]
 
-        ret = (True, image_printer.output)
+        ret = (True, output)
     except UnidentifiedImageError as e:
         ret = (False, f"ERROR: {image_url} does not appear to be an image")
     except Exception as e:

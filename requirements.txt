@@ -1,4 +1,4 @@
+ansifier==0.1.0
 functions-framework==3.*
 requests
 validators
-ansifier
