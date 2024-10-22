@@ -1,29 +1,41 @@
+# ansifier-cloud
+
 This is the source code for a minimal GCP Cloud Run function wrapping
-[ansifier](https://github.com/amminer/ansifier)
+[ansifier](https://github.com/amminer/ansifier),
+providing a dependency-free frontend over the internet.
 
-# Usage
+This is mainly just a fun little learning exercise and/or toy for me.
+The design is very silly. I will probably rewrite it eventually.
 
-Visit https://ansifier.com/ in a browser for a simple graphical client.
+## Usage
 
-You can also use the function programatically by sending a POST request to the site.
+The main intended use is as an API. Valid requests must be POSTS containing FormData.
+Clients must provide:
 
-Valid requests must be JSON if the source image is behind a URL, like so:
+* either a url or file upload, and
+* an output format string
+
+and they may provide:
+
+* height
+* width
+* character set to convert into
+
+You can also visit https://ansifier.com/ in a browser for a simple graphical client.
+
+## Examples
 
 ```
 curl -X POST 'https://ansifier.com/' \
-  -H 'Content-Type: application/json' \
-  -d '{"imageURL":"https://cdn.freebiesupply.com/logos/large/2x/debian-2-logo-png-transparent.png",
-       "format":"ansi-escaped"}'
-```
-
-Or FormData if the source image is a direct file upload, like so:
-
-```
-curl -X POST 'https://ansifier.com/' \
-  -F 'file=@/path/to/imagefile' \
+  -F 'file=@/path/to/file' \
   -F 'format=ansi-escaped'
 ```
 
-"soon"™️ I plan to...
-* strip this interface back to just one of these formats 
-* add fields to allow most of the knobs the backend has to be tweaked
+```
+curl -X POST 'https://ansifier.com/' \
+  -F 'url=https://somedomain.com/somefile.mp4' \
+  -F 'format=html/css'
+  -F 'height=90'
+  -F 'width=160'
+  -F 'characters=█,▓,▒,░, '
+```
