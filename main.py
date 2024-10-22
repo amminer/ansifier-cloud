@@ -6,9 +6,6 @@ from ansifier import ansify
 from PIL import UnidentifiedImageError
 
 
-# https://github.com/amminer/ansifier#Usage
-FORMATS = ["ansi-escaped", "html/css"]
-# https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
 FILE_EXTENSIONS = [ "blp", "bmp", "dds", "dib", "eps", "gif", "icns", "ico", "im", "jpeg", "jpg",
                    "msp", "pcx", "pfm", "png", "ppm", "sgi", "spider", "tga", "tiff", "webp", "xbm",
                    "cur", "dcx", "fits", "fli", "flc", "fpx", "ftex", "gbr", "gd", "imt",
@@ -35,63 +32,64 @@ def main(request):
         `make_response`
         <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
     """
-    received_json = request.get_json(silent=True)
     received_file = request.files["file"] if "file" in request.files else None
+    received_url = request.form.get("url")
 
     if received_file is not None:
-        format = request.form.get("format")
-        return file_flow(received_file, format)
+        return file_flow(received_file, request)
 
-    if received_json is not None:
-        return url_flow(received_json)
+    if received_url is not None:
+        return url_flow(received_url, request)
 
     return serve_UI()
 
 
-def file_flow(received_file, format):
+def file_flow(received_file, request):
     """
     :param received_file: werkzeug.FileStorage
     """
     message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
     status = False
+    format = request.form.get("format")
     try:
-        if received_file is not None and format is not None:
-            status, message = validate_format(format)
+        status, message = save_image_werkzeug(received_file)
         if status:
-            status, message = save_image_werkzeug(received_file)
-        if status:
-            _, message = process_imagefile(format, "the file you uploaded")
+            _, message = process_imagefile(request, "the file you uploaded")
     except Exception as e:
         message = message + "\n" + str(e)
     return message
 
 
-def url_flow(received_json):
+def url_flow(image_url, request):
     message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
-    image_url = received_json.get("imageURL")
-    format = received_json.get("format")
     status = False
     try:
-        if image_url is not None and format is not None:
-            status, message = validate_format(format)
-        if status:
-            status, message = validate_url(image_url)
+        status, message = validate_url(image_url)
         if status:
             status, message = download_url(image_url)
         if status:
             status, message = save_image_bytes(message)
         if status:
-            _, message = process_imagefile(format, image_url)
+            _, message = process_imagefile(request, image_url)
     except Exception as e:
         message = message + "\n" + str(e)
     return message
 
 
-def process_imagefile(format, image_url):
+def process_imagefile(request, image_url):
 
     ret = (False, r"failed to process image ¯\_(ツ)_/¯")
     try:
-        output = ansify(IMAGE_FILEPATH, output_format=format)[0]
+        format = request.form.get('format')
+        width = request.form.get('width')
+        if width is None: width = 20
+        height = request.form.get('height')
+        if height is None: height = 20
+        characters = request.form.get('characters')
+        with open('./temp.log', 'w') as wf:
+            wf.write(characters)
+        output = ansify(IMAGE_FILEPATH, output_format=format, chars=characters,
+                        height=int(height), width=int(width))[0]
 
         ret = (True, output)
     except UnidentifiedImageError as e:
@@ -155,18 +153,6 @@ def validate_url(url):
             raise ValueError("only HTTPS urls are allowed")
         if not any(map(lambda ex: url.endswith(ex), FILE_EXTENSIONS)):
             raise ValueError(f"file type must be one of {FILE_EXTENSIONS}")
-
-        ret = (True, "")
-    except Exception as e:
-        ret = (False, "ERROR: " + str(e))
-    return ret
-
-
-def validate_format(format):
-    ret = (False, r"invalid format ¯\_(ツ)_/¯")
-    try:
-        if not format in FORMATS:
-            raise ValueError(f"Format must be one of {FORMATS}")
 
         ret = (True, "")
     except Exception as e:

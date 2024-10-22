@@ -2,6 +2,8 @@
 <html>
   <head>
     <title>ansifier</title>
+	  <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
   <body>
     <div class="container">
@@ -10,6 +12,8 @@
 	  for display in text-only browsers and terminals, respectively;<br/>
 	  A web wrapper for <a href="https://github.com/amminer/ansifier">ansifier</a></p>
       
+	  <!-- form -->
+
       <form id="imageForm">
 		<div class="input">
         <label for="format">Output Format:</label>
@@ -37,9 +41,31 @@
 
 		</div>
 
+		<p class="separator"> & </p>
+
+		<div class="optional_input">
+          <label for="width">Output Width (min. 20):</label>
+          <input type="number" id="width" name="width" value=60>
+		</div>
+
+		<div class="optional_input">
+          <label for="height">Output Height (min. 20):</label>
+          <input type="number" id="height" name="height" value=60>
+		</div>
+
+		<div class="optional_input">
+          <label for="characters">
+		   Characters:
+			  <span disabled class="tooltip" title="characters to be chosen from when converting regions of the image to text. Should be sorted from more opaque to less opaque in normal usage.">(i)</span>
+		  </label>
+          <input type="text" id="characters" name="characters" value="█▓▒░#≡±+÷- ">
+		</div>
+
         <input id="submit" type="submit" value="Submit">
       </form>
-      
+
+	  <!-- /form -->
+
       <div id="result"></div>
       <a id="downloadBtn" style="display: none;">Download Output</a>
     </div>
@@ -52,37 +78,45 @@
 
 		//const remote = "https://ansifier.com/"
 		const remote = "/";
+
         const format = document.getElementById("format").value;
-        const imageURL = document.getElementById("imageURL").value;
 		const fileInput = document.getElementById("imageFile")
         const imageFilePath = fileInput.value;
 		const file = fileInput.files ? fileInput.files[0] : null;
+        const imageURL = document.getElementById("imageURL").value;
+        const width = document.getElementById("width").value;
+        const height = document.getElementById("height").value;
+		const characters = document.getElementById("characters").value;
+		console.log('"' + characters + '"')
 		var response = {
 			status: 400,
 			text: async() => "ERROR: Please provide a file or URL as input"
 		};
 
+		var ready = true;
+		const formData = new FormData();
+		formData.append("format", format);
+		formData.append("width", width);
+		formData.append("height", height);
+		formData.append("characters", characters);
 		if (imageFilePath != "") {
 			fileInput.value = "";
 			console.log("POSTing file", imageFilePath);
-			const formData = new FormData();
 			formData.append("file", file);
-			formData.append("format", format);
+		} else if (imageURL != "") {
+			console.log("POSTing url", imageURL);
+			formData.append("url", imageURL);
+		} else {
+			ready = false;
+		}
+		if (ready) {
 			response = await fetch(remote, {
 			  method: "POST",
 			  body: formData
 			});
-
-		} else if (imageURL != "") {
-			console.log("POSTing url", imageURL);
-			response = await fetch(remote, {
-			  method: "POST",
-			  headers: { "Content-Type": "application/json" },
-			  body: JSON.stringify({ imageURL, format })
-			});
 		}
-        
-        var result = await response.text();
+
+		var result = await response.text();
 		document.getElementById("result").innerHTML = `<pre style="display: flex; justify-content: center;">${result}</pre>`;
 		const downloadBtn = document.getElementById("downloadBtn");
 
@@ -118,6 +152,7 @@ body {
 	justify-content: center;
 	background: #011;
 	color: #FFD;
+	font-size: 1.3em;
 }
 
 .container {
@@ -158,6 +193,14 @@ form > * {
 	white-space: nowrap;
 }
 
+.optional_input {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	white-space: nowrap;
+	margin-bottom: 1.5em;
+}
+
 .separator {
 	margin: 1.5em 0px;
 }
@@ -191,5 +234,9 @@ form > * {
 	top: 42%;
 	right: 0px;
 	transform: scale(2, 10);
+}
+
+#result {
+	font-size: 1em;
 }
 </style>
