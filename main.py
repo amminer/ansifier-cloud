@@ -81,15 +81,26 @@ def process_imagefile(request, image_url):
     ret = (False, r"failed to process image ¯\_(ツ)_/¯")
     try:
         format = request.form.get('format')
+
         width = request.form.get('width')
-        if width is None: width = 20
+        if width is None:
+            width = 20
+        else:
+            width = int(width)
+            if width > 1000:
+                width = 1000
+
         height = request.form.get('height')
-        if height is None: height = 20
+        if height is None:
+            height = 20
+        else:
+            height = int(height)
+            if height > 1000:
+                height = 1000
+
         characters = request.form.get('characters')
-        with open('./temp.log', 'w') as wf:
-            wf.write(characters)
         output = ansify(IMAGE_FILEPATH, output_format=format, chars=characters,
-                        height=int(height), width=int(width))[0]
+                        height=height, width=width)[0]
 
         ret = (True, output)
     except UnidentifiedImageError as e:

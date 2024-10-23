@@ -3,7 +3,7 @@
   <head>
     <title>ansifier</title>
 	  <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=yes">
   </head>
   <body>
     <div class="container">
@@ -44,12 +44,12 @@
 		<p class="separator"> & </p>
 
 		<div class="optional_input">
-          <label for="width">Output Width (min. 20):</label>
+          <label for="width">Output Width (min. 20, max. 1000):</label>
           <input type="number" id="width" name="width" value=60>
 		</div>
 
 		<div class="optional_input">
-          <label for="height">Output Height (min. 20):</label>
+          <label for="height">Output Height (min. 20, max. 1000):</label>
           <input type="number" id="height" name="height" value=60>
 		</div>
 
@@ -62,19 +62,22 @@
 		</div>
 
         <input id="submit" type="submit" value="Submit">
+        <div id="result"></div>
+	      <div class="optional_input">
+		    <a id="downloadBtn" style="display: none;">Download Output</a>
+	      </div>
+	    </div>
       </form>
 
 	  <!-- /form -->
-
-      <div id="result"></div>
-      <a id="downloadBtn" style="display: none;">Download Output</a>
-    </div>
     
     <script>
       document.getElementById("imageForm").onsubmit = async function(event) {
         event.preventDefault();
 
-        document.getElementById("result").innerHTML = `<pre>processing request...</pre>`;
+		var result_container = document.getElementById("result");
+		result_container.style.fontSize = document.body.style.fontSize;
+        result_container.innerHTML = `<pre>processing request...</pre>`;
 
 		//const remote = "https://ansifier.com/"
 		const remote = "/";
@@ -87,7 +90,6 @@
         const width = document.getElementById("width").value;
         const height = document.getElementById("height").value;
 		const characters = document.getElementById("characters").value;
-		console.log('"' + characters + '"')
 		var response = {
 			status: 400,
 			text: async() => "ERROR: Please provide a file or URL as input"
@@ -117,10 +119,26 @@
 		}
 
 		var result = await response.text();
-		document.getElementById("result").innerHTML = `<pre style="display: flex; justify-content: center;">${result}</pre>`;
+		result_container.innerHTML = `<pre style="display: flex; justify-content: center;">${result}</pre>`;
 		const downloadBtn = document.getElementById("downloadBtn");
 
 		if (! result.startsWith("ERROR:")) {
+			var lines = result_container.innerHTML.split('<br>');
+			if (lines == [result_container.innerHTML]) {
+				const lines = result_container.innerHTML.split('\n');
+			}
+			line = lines[0].replace(/<span[^>]*>([^<]{2})<\/span>/g, '$1');
+			line = line.replace(/<[^>]*>/g, '');
+			lineLength = line.length;
+			var newSize = 40 / lineLength;
+			newSize = Math.min(newSize, 4.0);
+			newSize = Math.max(newSize, 0.04);
+			result_container.style.fontSize = newSize + "em";
+
+			if (window.innerWidth >= 1024) {
+				result_container.style.fontSize = newSize * 2 + "em";
+			}
+
 			const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(result);
 			downloadBtn.href = dataUrl;
 			downloadBtn.download = format === "html/css"? "output.html" : "output.txt";
@@ -128,6 +146,7 @@
 			downloadBtn.style.display = "inline";
 
 			} else {
+				result_container.style.fontSize = "0.8em";
 				downloadBtn.style.display = "none";
 			}
       };
@@ -152,12 +171,11 @@ body {
 	justify-content: center;
 	background: #011;
 	color: #FFD;
-	font-size: 1.3em;
 }
 
 .container {
-	width: 80%;
-	min-width: 400px;
+	width: 100%;
+	min-width: 390px;
 }
 
 #description {
@@ -238,5 +256,31 @@ form > * {
 
 #result {
 	font-size: 1em;
+	margin: 28px 0px;
 }
+
+@media (min-width: 0px) {
+	body {
+		font-size: 1em;
+	}
+}
+@media (min-width: 393px) {
+	body {
+		font-size: 1.2em;
+	}
+}
+@media (min-width: 680px) {
+	body {
+		font-size: 1.4em;
+	}
+	.container {
+		width: 80%;
+	}
+}
+@media (min-width: 1024) {
+	body {
+		font-size: 1.6em;
+	}
+}
+
 </style>
