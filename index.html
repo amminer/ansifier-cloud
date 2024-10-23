@@ -15,16 +15,6 @@
 	  <!-- form -->
 
       <form id="imageForm">
-		<div class="input">
-        <label for="format">Output Format:</label>
-        <select id="format" name="format" required>
-          <option value="html/css">HTML/CSS</option>
-          <option value="ansi-escaped">ANSI Escaped</option>
-        </select>
-		</div>
-
-		<p class="separator"> & </p>
-        
 		<div class="requiredSet">
 
 		<div class="input">
@@ -32,7 +22,7 @@
           <input class="fileInput" type="file" id="imageFile" name="imageFile">
 		</div>
 
-		<p class="separator"> or </p>
+		<span> or </span>
 
 		<div class="input">
           <label for="imageURL">Image URL:</label>
@@ -40,8 +30,14 @@
 		</div>
 
 		</div>
-
-		<p class="separator"> & </p>
+        
+		<div class="input">
+        <label for="format">Output Format:</label>
+        <select id="format" name="format" required>
+          <option value="html/css">HTML/CSS</option>
+          <option value="ansi-escaped">ANSI Escaped</option>
+        </select>
+		</div>
 
 		<div class="optional_input">
           <label for="width">Output Width (min. 20, max. 1000):</label>
@@ -119,7 +115,7 @@
 		}
 
 		var result = await response.text();
-		result_container.innerHTML = `<pre style="display: flex; justify-content: center;">${result}</pre>`;
+		result_container.innerHTML = `<pre style="display: block;">${result}</pre>`;
 		const downloadBtn = document.getElementById("downloadBtn");
 
 		if (! result.startsWith("ERROR:")) {
@@ -154,133 +150,31 @@
   </body>
 </html>
 
-
-<!-- CSS -->
-
 <style>
 
-.disabled {
-	color: gray;
-	text-decoration: line-through;
-}
-
 body {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
 	background: #011;
 	color: #FFD;
-}
-
-.container {
-	width: 100%;
-	min-width: 390px;
-}
-
-#description {
-	margin-bottom: 2.3em;
-}
-
-p {
-	margin: 0px;
-}
-
-form {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-
-	padding: 2.5em 0px;
-
-	border-style: dotted;
-	border-width: 1px;
-}
-form > * {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-}
-
-.input {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	white-space: nowrap;
-}
-
-.optional_input {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	white-space: nowrap;
-	margin-bottom: 1.5em;
-}
-
-.separator {
-	margin: 1.5em 0px;
-}
-
-.fileInput {
-	padding-right: 0px;
-}
-
-#submit {
-	width: 80px;
-	margin-top: 2.3em;
+	min-width: 245px;
 }
 
 .requiredSet {
-	position: relative;
-	padding-left: 1em;
-	margin-bottom: 1em;
+	padding: 1em;
+	width: 100% - 2em;
+	border-style: solid;
+	border-width: 1px;
 }
 
-.requiredSet:before {
-	content: "{";
-	position: absolute;
-	top: 42%;
-	left: 0px;
-	transform: scale(2, 10);
+form > * {
+	padding: 0.5em 0em;
 }
 
-.requiredSet:after {
-	content: "}";
-	position: absolute;
-	top: 42%;
-	right: 0px;
-	transform: scale(2, 10);
+#submit {
+	padding: 0.2em 1em;
 }
 
 #result {
-	font-size: 1em;
-	margin: 28px 0px;
-}
-
-@media (min-width: 0px) {
-	body {
-		font-size: 1em;
-	}
-}
-@media (min-width: 393px) {
-	body {
-		font-size: 1.2em;
-	}
-}
-@media (min-width: 680px) {
-	body {
-		font-size: 1.4em;
-	}
-	.container {
-		width: 80%;
-	}
-}
-@media (min-width: 1024) {
-	body {
-		font-size: 1.6em;
-	}
+	padding: 20px 0em;
 }
 
 </style>
