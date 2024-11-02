@@ -7,7 +7,7 @@ main:
 clean:
 	gcloud alpha functions local delete ansifier_local
 
-test:
-	gcloud alpha functions local call ansifier_local --data='{"imageURL": "https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_640.jpg", "format": "ansi-escaped"}'
+#test:
+	#gcloud alpha functions local call ansifier_local --data='{"imageURL": "https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_640.jpg", "format": "ansi-escaped"}'
 
 rebuild: clean main

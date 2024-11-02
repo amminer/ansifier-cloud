@@ -98,7 +98,7 @@ def process_imagefile(request, image_url):
             if height > 1000:
                 height = 1000
 
-        characters = request.form.get('characters')
+        characters = list(request.form.get('characters'))
         output = ansify(IMAGE_FILEPATH, output_format=format, chars=characters,
                         height=height, width=width)[0]
 
