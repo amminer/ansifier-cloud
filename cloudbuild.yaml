@@ -3,19 +3,18 @@ steps:
 
 # Build the image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'us-west1-docker.pkg.dev/ansifier/cloud-run-source-deploy/ansifier', '.']
+  args: ['build', '-t', 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed', '.']
 
 # Push the image to Artifact Registry
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'us-west1-docker.pkg.dev/ansifier/cloud-run-source-deploy/ansifier']
+  args: ['push', 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed']
 
 # Deploy image to Cloud Run
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: gcloud
-  args: ['run', 'deploy', 'ansifier', '--image', 'us-west1-docker.pkg.dev/ansifier/cloud-run-source-deploy/ansifier', '--region', 'us-west1']
-
+  args: ['run', 'deploy', 'ansifier', '--image', 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed', '--region', 'us-west2']
 images:
-- 'us-west1-docker.pkg.dev/ansifier/cloud-run-source-deploy/ansifier'
+- 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed'
 
 options:
   logging: CLOUD_LOGGING_ONLY
