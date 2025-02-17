@@ -24,7 +24,7 @@ MAX_FILESIZE_B = 1000 * MAX_FILESIZE_KB
 app = Flask('ansifier-cloud')
 
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def main():
     """
     Returns:
@@ -178,5 +178,4 @@ def serve_UI():
     return ret
 
 if __name__ == '__main__':
-    print('running')
     app.run(debug=True)
