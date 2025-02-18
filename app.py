@@ -1,11 +1,13 @@
-#import functions_framework
+#import google.cloud.logging
+import logging
+import os
 import requests
 import validators
 
 from ansifier import ansify
 from PIL import UnidentifiedImageError
 
-from flask import Flask, request#, render_template
+from flask import Flask, request, render_template
 
 
 FILE_EXTENSIONS = [ "blp", "bmp", "dds", "dib", "eps", "gif", "icns", "ico", "im", "jpeg", "jpg",
@@ -22,9 +24,20 @@ MAX_FILESIZE_MB = 5
 MAX_FILESIZE_KB = 1000 * MAX_FILESIZE_MB
 MAX_FILESIZE_B = 1000 * MAX_FILESIZE_KB
 app = Flask('ansifier-cloud')
+#client = google.cloud.logging.Client()
+#client.setup_logging()
+def log_info(message):
+    app.logger.info(message)
+    logging.info(message)
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
+def serve_UI():
+    log_info("serving UI")
+    return render_template("index.html")
+
+
+@app.route('/ansify', methods=['POST'])
 def main():
     """
     Returns:
@@ -32,6 +45,7 @@ def main():
         `make_response`
         <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
     """
+    log_info(f"entered main with {request.files} & {request.form.get('url')}")
     received_file = request.files["file"] if "file" in request.files else None
     received_url = request.form.get("url")
 
@@ -48,28 +62,29 @@ def file_flow(received_file, request):
     """
     :param received_file: werkzeug.FileStorage
     """
+    log_info(f" processing {received_file}")
     message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
-    status = False
-    format = request.form.get("format")
+    status = 500
     try:
         status, message = save_image_werkzeug(received_file)
-        if status:
+        if status  >= 200 and status <= 299:
             _, message = process_imagefile(request, "the file you uploaded")
     except Exception as e:
         message = message + "\n" + str(e)
-    return message
+    return message, status
 
 
 def url_flow(image_url, request):
+    log_info(f" processing {image_url}")
     message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
     status = False
     try:
         status, message = validate_url(image_url)
-        if status:
+        if status >= 200 and status <= 299:
             status, message = download_url(image_url)
-        if status:
+        if status >= 200 and status <= 299:
             status, message = save_image_bytes(message)
-        if status:
+        if status >= 200 and status <= 299:
             _, message = process_imagefile(request, image_url)
     except Exception as e:
         message = message + "\n" + str(e)
@@ -77,7 +92,7 @@ def url_flow(image_url, request):
 
 
 def process_imagefile(request, image_url):
-
+    log_info(f"ansifying downloaded copy of {image_url}")
     ret = (False, r"failed to process image ¯\_(ツ)_/¯")
     try:
         format = request.form.get('format')
@@ -111,34 +126,41 @@ def process_imagefile(request, image_url):
 
 
 def save_image_werkzeug(image):
-    ret = (False, r"failed to process image ¯\_(ツ)_/¯")
-    file_size = len(image.read())
+    log_info("werkzeug-saving image to file...")
+    ret = (500, r"failed to process image ¯\_(ツ)_/¯")
     image.seek(0)
     try:
+        file_size = len(image.read())
+        log_info(f"received {file_size} byte image to save")
         if file_size > MAX_FILESIZE_B:
             raise ValueError(f"File is ~{file_size//1000/1000} MB, must not exceed {MAX_FILESIZE_MB} MB")
+        image.seek(0)
         image.save(IMAGE_FILEPATH)  # TODO may be reading into memory twice here
+        saved_size = os.path.getsize(IMAGE_FILEPATH)
+        log_info(f"saved {saved_size} bytes to {IMAGE_FILEPATH}")
 
-        ret = (True, "")
+        ret = (200, f"Image saved to {IMAGE_FILEPATH}")
     except Exception as e:
-        ret = (False, "ERROR: " + str(e))
+        ret = (500, "ERROR: " + str(e))
     return ret
 
 
 def save_image_bytes(content):
-    ret = (False, r"failed to process image ¯\_(ツ)_/¯")
+    log_info("wb-saving image to file...")
+    ret = (500, r"failed to process image ¯\_(ツ)_/¯")
     try:
         with open(IMAGE_FILEPATH, "wb") as wf:
             wf.write(content)
 
-        ret = (True, "")
+        ret = (200, f"image saved to {IMAGE_FILEPATH}")
     except Exception as e:
-        ret = (False, "ERROR: " + str(e))
+        ret = (500, "ERROR: " + str(e))
     return ret
 
 
 def download_url(url):
-    ret = (False, r"failed to download image ¯\_(ツ)_/¯")
+    log_info(f"downloading image from {url}")
+    ret = (500, r"failed to download image ¯\_(ツ)_/¯")
     try:
         s = requests.session()
         head_r = s.head(url)
@@ -149,14 +171,15 @@ def download_url(url):
             raise ValueError(f"File must not exceed {MAX_FILESIZE_MB} MB")
         content_r = s.get(url, timeout=10)
 
-        ret = (True, content_r.content)
+        ret = (200, content_r.content)
     except Exception as e:
-        ret = (False, "ERROR: " + str(e))
+        ret = (500, "ERROR: " + str(e))
     return ret
 
 
 def validate_url(url):
-    ret = (False, r"no valid image URL provided ¯\_(ツ)_/¯")
+    log_info(f"validating {url}")
+    ret = (500, r"no valid image URL provided ¯\_(ツ)_/¯")
     try:
         if not validators.url(url):
             raise ValueError("valid URL must be supplied")
@@ -165,17 +188,12 @@ def validate_url(url):
         if not any(map(lambda ex: url.endswith(ex), FILE_EXTENSIONS)):
             raise ValueError(f"file type must be one of {FILE_EXTENSIONS}")
 
-        ret = (True, "")
+        ret = (200, f"{url} validated")
     except Exception as e:
         ret = (False, "ERROR: " + str(e))
     return ret
 
 
-def serve_UI():
-    ret = r"<html><body>Something went wrong ¯\_(ツ)_/¯</body></html>"
-    with open("./index.html", "r") as rf:
-        ret = "".join(rf.readlines())
-    return ret
-
 if __name__ == '__main__':
+    log_info("__main__ appliation entrypoint")
     app.run(debug=True)
