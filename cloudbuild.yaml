@@ -3,18 +3,26 @@ steps:
 
 # Build the image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed', '.']
+  args: ['build', '-t', 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed/ansifier-us-west2:$COMMIT_SHA', '.']
 
 # Push the image to Artifact Registry
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed']
+  args: ['push', 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed/ansifier-us-west2:$COMMIT_SHA']
 
 # Deploy image to Cloud Run
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: gcloud
-  args: ['run', 'deploy', 'ansifier', '--image', 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed', '--region', 'us-west2']
+  args: 
+    - 'run'
+    - 'deploy'
+    - 'ansifier-us-west2'
+    - '--image'
+    - 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed/ansifier-us-west2:$COMMIT_SHA'
+    - '--region'
+    - 'us-west2'
+
 images:
-- 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed'
+- 'us-west2-docker.pkg.dev/ansifier/ansifier-deploy/ansifier-deployed/ansifier-us-west2:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
