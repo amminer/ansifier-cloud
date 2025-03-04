@@ -126,7 +126,7 @@
 			line = lines[0].replace(/<span[^>]*>([^<]{2})<\/span>/g, '$1');
 			line = line.replace(/<[^>]*>/g, '');
 			lineLength = line.length;
-			var newSize = 40 / lineLength;
+			var newSize = 128 / lineLength;
 			newSize = Math.min(newSize, 4.0);
 			newSize = Math.max(newSize, 0.04);
 			result_container.style.fontSize = newSize + "em";
