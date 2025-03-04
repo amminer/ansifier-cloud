@@ -5,7 +5,6 @@ import requests
 import validators
 
 from ansifier import ansify
-from PIL import UnidentifiedImageError
 
 from flask import Flask, request, render_template
 
@@ -40,160 +39,152 @@ def serve_UI():
 @app.route('/ansify', methods=['POST'])
 def main():
     """
-    Returns:
-        The response text, or any set of values that can be turned into a Response object using
-        `make_response`
-        <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
+    entry point for API, UI can hit this from an existing client's JS process.
+    calls exactly one of the *_flow functions based on what source the request provides,
+    prioritizing file inputs, then URL inputs.
+    :return: str, response message from processing input image.
+        May be a successful result of ansification or an error message.
     """
-    log_info(f"entered main with {request.files} & {request.form.get('url')}")
+    log_info(f"entered main with file \"{request.files}\" & url \"{request.form.get('url')}\"")
+
     received_file = request.files["file"] if "file" in request.files else None
     received_url = request.form.get("url")
 
     if received_file is not None:
-        return file_flow(received_file, request)
+        return file_flow(received_file, request), 200
 
     if received_url is not None:
-        return url_flow(received_url, request)
+        return url_flow(received_url, request), 200
 
-    return serve_UI()
+    return "Please supply a valid file or URL to ansify", 500
 
 
 def file_flow(received_file, request):
     """
     :param received_file: werkzeug.FileStorage
+    :return: str, see main
     """
     log_info(f" processing {received_file}")
     message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
-    status = 500
     try:
-        status, message = save_image_werkzeug(received_file)
-        if status  >= 200 and status <= 299:
-            _, message = process_imagefile(request, "the file you uploaded")
+        message = save_image_werkzeug(received_file)
+        message = process_imagefile(request, "the file you uploaded")
     except Exception as e:
         message = message + "\n" + str(e)
-    return message, status
+    return message
 
 
 def url_flow(image_url, request):
+    """
+    :param image_url: str
+    :return: str, see main
+    """
     log_info(f" processing {image_url}")
     message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
-    status = False
     try:
-        status, message = validate_url(image_url)
-        if status >= 200 and status <= 299:
-            status, message = download_url(image_url)
-        if status >= 200 and status <= 299:
-            status, message = save_image_bytes(message)
-        if status >= 200 and status <= 299:
-            _, message = process_imagefile(request, image_url)
+        message = validate_url(image_url)
+        message = download_url(image_url)
+        message = save_image_bytes(message)
+        message = process_imagefile(request, image_url)
     except Exception as e:
         message = message + "\n" + str(e)
     return message
 
 
 def process_imagefile(request, image_url):
+    """
+    ansifies the data stored at IMAGE_FILEPATH; meant to be called after file has been saved there
+    :param image_url: str, only used for logging
+    :return: str, see main
+    """
     log_info(f"ansifying downloaded copy of {image_url}")
-    ret = (False, r"failed to process image ¯\_(ツ)_/¯")
-    try:
-        format = request.form.get('format')
 
-        width = request.form.get('width')
-        if width is None:
-            width = 20
+    format_raw = request.form.get('format')
+    characters_raw = request.form.get('characters')
+
+    if format_raw is None:
+        raise ValueError("please provide a valid output format - "
+                         "see https://github.com/amminer/ansifier-cloud")
+    if characters_raw is None:
+        raise ValueError("please provide a valid character set to form output with - "
+                         "see https://github.com/amminer/ansifier-cloud")
+
+    characters = list(characters_raw)
+
+    def validate_dim(dim):
+        if dim is None:
+            dim = 20
         else:
-            width = int(width)
-            if width > 1000:
-                width = 1000
+            dim = int(dim)
+            if dim > 1000:
+                dim = 1000
+        return dim
 
-        height = request.form.get('height')
-        if height is None:
-            height = 20
-        else:
-            height = int(height)
-            if height > 1000:
-                height = 1000
+    width = validate_dim(request.form.get('width'))
+    height = validate_dim(request.form.get('height'))
 
-        characters = list(request.form.get('characters'))
-        output = ansify(IMAGE_FILEPATH, output_format=format, chars=characters,
-                        height=height, width=width)[0]
-
-        ret = (True, output)
-    except UnidentifiedImageError as e:
-        ret = (False, f"ERROR: {image_url} does not appear to be an image")
-    except Exception as e:
-        ret = (False, "ERROR: " + str(e))
-    return ret
+    return ansify(IMAGE_FILEPATH, output_format=format_raw, chars=characters,
+                    height=height, width=width)[0]
 
 
 def save_image_werkzeug(image):
+    """ saves an image to disk from a werkzeug file object """
     log_info("werkzeug-saving image to file...")
-    ret = (500, r"failed to process image ¯\_(ツ)_/¯")
+    message = r"failed to process image ¯\_(ツ)_/¯"
     image.seek(0)
-    try:
-        file_size = len(image.read())
-        log_info(f"received {file_size} byte image to save")
-        if file_size > MAX_FILESIZE_B:
-            raise ValueError(f"File is ~{file_size//1000/1000} MB, must not exceed {MAX_FILESIZE_MB} MB")
-        image.seek(0)
-        image.save(IMAGE_FILEPATH)  # TODO may be reading into memory twice here
-        saved_size = os.path.getsize(IMAGE_FILEPATH)
-        log_info(f"saved {saved_size} bytes to {IMAGE_FILEPATH}")
+    file_size = len(image.read())
+    log_info(f"received {file_size} byte image to save")
+    if file_size > MAX_FILESIZE_B:
+        raise ValueError(f"File is ~{file_size/1e6} MB, must not exceed {MAX_FILESIZE_MB} MB")
+    image.seek(0)
+    image.save(IMAGE_FILEPATH)  # TODO may be reading into memory twice here
+    saved_size = os.path.getsize(IMAGE_FILEPATH)
+    log_info(f"saved {saved_size} bytes to {IMAGE_FILEPATH}")
 
-        ret = (200, f"Image saved to {IMAGE_FILEPATH}")
-    except Exception as e:
-        ret = (500, "ERROR: " + str(e))
-    return ret
+    message = f"Image saved to {IMAGE_FILEPATH}"
+    return message
 
 
 def save_image_bytes(content):
     log_info("wb-saving image to file...")
-    ret = (500, r"failed to process image ¯\_(ツ)_/¯")
-    try:
-        with open(IMAGE_FILEPATH, "wb") as wf:
-            wf.write(content)
+    message = r"failed to process image ¯\_(ツ)_/¯"
+    with open(IMAGE_FILEPATH, "wb") as wf:
+        wf.write(content)
 
-        ret = (200, f"image saved to {IMAGE_FILEPATH}")
-    except Exception as e:
-        ret = (500, "ERROR: " + str(e))
-    return ret
+    message = f"image saved to {IMAGE_FILEPATH}"
+    return message
 
 
 def download_url(url):
     log_info(f"downloading image from {url}")
-    ret = (500, r"failed to download image ¯\_(ツ)_/¯")
-    try:
-        s = requests.session()
-        head_r = s.head(url)
-        if head_r.status_code < 200 or head_r.status_code > 299:
-            raise ValueError(f"image url returned code {head_r.status_code}")
-        size = int(head_r.headers.get("Content-Length", 0))
-        if size > MAX_FILESIZE_B:
-            raise ValueError(f"File must not exceed {MAX_FILESIZE_MB} MB")
-        content_r = s.get(url, timeout=10)
+    message = r"failed to download image ¯\_(ツ)_/¯"
+    s = requests.session()
+    head_raw = s.head(url)
+    if head_raw.status_code < 200 or head_raw.status_code > 299:
+        raise ValueError(f"image url returned code {head_raw.status_code}")
+    size = int(head_raw.headers.get("Content-Length", 0))
+    if size > MAX_FILESIZE_B:
+        raise ValueError(f"File must not exceed {MAX_FILESIZE_MB} MB")
 
-        ret = (200, content_r.content)
-    except Exception as e:
-        ret = (500, "ERROR: " + str(e))
-    return ret
+    content_raw = s.get(url, timeout=10)
+    message = content_raw.content
+    return message
 
 
 def validate_url(url):
     log_info(f"validating {url}")
-    ret = (500, r"no valid image URL provided ¯\_(ツ)_/¯")
-    try:
-        if not validators.url(url):
-            raise ValueError("valid URL must be supplied")
-        if not url.startswith("https"):
-            raise ValueError("only HTTPS urls are allowed")
-        if not any(map(lambda ex: url.endswith(ex), FILE_EXTENSIONS)):
-            raise ValueError(f"file type must be one of {FILE_EXTENSIONS}")
+    message = r"no valid image URL provided ¯\_(ツ)_/¯"
 
-        ret = (200, f"{url} validated")
-    except Exception as e:
-        ret = (False, "ERROR: " + str(e))
-    return ret
+    if not validators.url(url):
+        raise ValueError("valid URL must be supplied")
+    if not url.startswith("https"):
+        raise ValueError("only HTTPS urls are allowed")
+    if not any(map(lambda ex: url.endswith(ex), FILE_EXTENSIONS)):
+        raise ValueError(f"file type must be one of {FILE_EXTENSIONS}")
+
+    message = f"{url} validated"
+    return message
 
 
 if __name__ == '__main__':
-    log_info("__main__ appliation entrypoint")
     app.run(debug=True)

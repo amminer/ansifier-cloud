@@ -1,13 +1,24 @@
 SHELL=/bin/bash
 
 main:
-	# have to make sure script in index.html is POSTing to / instead of ansifier.com...
-	gcloud alpha functions local deploy ansifier_local --entry-point=main --runtime=python312
+	flask run &
 
-clean:
-	gcloud alpha functions local delete ansifier_local
+kill:
+	pkill -f 'ansifier-cloud.*flask'
 
-test:
-	gcloud alpha functions local call ansifier_local --data='{"url": "https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_640.jpg", "format": "ansi-escaped"}'
+test_url:
+	curl -X POST 'http://127.0.0.1:5000/ansify' \
+	-F 'url=https://cdn.outsideonline.com/wp-content/uploads/2023/03/Funny_Dog_H.jpg' \
+	-F "format=ansi-escaped" \
+	-F "characters=#" \
+	-F "width=100"
 
-rebuild: clean main
+test_file_upload:
+	curl -X POST 'http://127.0.0.1:5000/ansify' \
+	-F 'file=@./test.png' \
+	-F "format=ansi-escaped" \
+	-F "characters=#" \
+	-F "width=100"
+
+
+rebuild: kill main
