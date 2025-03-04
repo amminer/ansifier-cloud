@@ -28,30 +28,29 @@ single-line-height text characters,
 
 In other words, clients must provide:
 
-* either a url or file upload, and
-* an output format string
+* either a url or file upload
 
 and they may provide:
 
+* an output format string ("ansi-escaped" or "html/css") (defaults to ansi)
+* a list of characters to convert the image into (defaults to block chars)
 * height
 * width
-* character list to convert into
 
 ## Examples
 
 ```
-curl -X POST 'https://ansifier.com/' \
+curl -X POST 'https://ansifier.com/ansify' \
   -F 'file=@/path/to/file' \
-  -F 'format=ansi-escaped'
 ```
 
 ```
-curl -X POST 'https://ansifier.com/' \
+curl -X POST 'https://ansifier.com/ansify' \
   -F 'url=https://somedomain.com/somefile.mp4' \
   -F 'format=html/css'
   -F 'height=90'
   -F 'width=160'
-  -F 'characters=█,▓,▒,░, '
+  -F 'characters=█▓▒░ '
 ```
 
 You can also visit https://ansifier.com/ in a browser for a simple graphical client.

@@ -103,11 +103,9 @@ def process_imagefile(request, image_url):
     characters_raw = request.form.get('characters')
 
     if format_raw is None:
-        raise ValueError("please provide a valid output format - "
-                         "see https://github.com/amminer/ansifier-cloud")
+        format_raw = 'ansi-escaped'
     if characters_raw is None:
-        raise ValueError("please provide a valid character set to form output with - "
-                         "see https://github.com/amminer/ansifier-cloud")
+        characters_raw = '█▓▒░ '
 
     characters = list(characters_raw)
 
