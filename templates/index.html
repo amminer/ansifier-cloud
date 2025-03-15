@@ -8,9 +8,14 @@
   <body>
     <div class="container">
       <h1>ansifier</h1>
-	  <p id="description">Convert image files to styled HTML or ansi-escaped text<br/>
-	  for display in text-only browsers and terminals, respectively;<br/>
-	  A web wrapper for <a href="https://github.com/amminer/ansifier">ansifier</a></p>
+	  <p id="description">
+      Convert image files to styled HTML or ansi-escaped text<br/>
+      for display in text-only browsers and terminals, respectively;<br/>
+      A web wrapper for
+      <a href="https://github.com/amminer/ansifier" target="_blank">ansifier</a>.<br/>
+      Hover over fields for more information, or read the documentation
+      <a href="https://github.com/amminer/ansifier-cloud/blob/main/README.md" target="_blank">here</a>.
+    </p>
       
 	  <!-- form -->
 
@@ -52,18 +57,25 @@
 		<div class="optional_input">
           <label for="characters">
 		   Characters:
-			  <span disabled class="tooltip" title="characters to be chosen from when converting regions of the image to text. Should be sorted from more opaque to less opaque in normal usage.">(i)</span>
+			  <span disabled class="tooltip"
+          title="characters to be chosen from when converting regions of the image to text. Should be sorted from more opaque to less opaque in normal usage.">
+          (i)
+        </span>
 		  </label>
           <input type="text" id="characters" name="characters" value="█▓▒░#≡±+÷- ">
 		</div>
 
 		<div class="optional_input">
-          <label for="library">
-		   Submit to Library:
-			  <span disabled class="tooltip" title="if checked, the result of ansification will be
-                  saved and made publicly viewable to other users">(i)</span>
+          <label for="gallery">
+		   Submit to text art gallery:
+			  <span disabled class="tooltip"
+          title="if checked, the result of ansification will be saved and made publicly viewable to
+          other users. At the time of writing, this is under development and this checkbox doesn't
+          actually do anything :)">
+          (i)
+        </span>
 		  </label>
-          <input type="checkbox" id="library" name="library">
+          <input type="checkbox" id="gallery" name="gallery">
 		</div>
 
         <input id="submit" type="submit" value="Submit">
@@ -76,88 +88,91 @@
 
 	  <!-- /form -->
     
-    <script>
-      document.getElementById("imageForm").onsubmit = async function(event) {
-        event.preventDefault();
+    <!-- form submission script -->
+    <script> document.getElementById("imageForm").onsubmit = async function(event) {
+      event.preventDefault();
 
-		var result_container = document.getElementById("result");
-		result_container.style.fontSize = document.body.style.fontSize;
+      var result_container = document.getElementById("result");
+      result_container.style.fontSize = document.body.style.fontSize;
         result_container.innerHTML = `<pre>processing request...</pre>`;
 
-		//const remote = "https://ansifier.com/"
-		const remote = "/ansify";
-
-        const format = document.getElementById("format").value;
-		const fileInput = document.getElementById("imageFile")
-        const imageFilePath = fileInput.value;
-		const file = fileInput.files ? fileInput.files[0] : null;
-        const imageURL = document.getElementById("imageURL").value;
-        const width = document.getElementById("width").value;
-        const height = document.getElementById("height").value;
-		const characters = document.getElementById("characters").value;
-        const library = document.getElementById("library").checked;
-		var response = {
-			status: 400,
-			text: async() => "ERROR: Please provide a file or URL as input"
-		};
-
-		var ready = true;
-		const formData = new FormData();
-		formData.append("format", format);
-		formData.append("width", width);
-		formData.append("height", height);
-		formData.append("characters", characters);
-		formData.append("library", library);
-		if (imageFilePath != "") {
-			fileInput.value = "";
-			console.log("POSTing file", imageFilePath);
-			formData.append("file", file);
-		} else if (imageURL != "") {
-			console.log("POSTing url", imageURL);
-			formData.append("url", imageURL);
-		} else {
-			ready = false;
-		}
-		if (ready) {
-			response = await fetch(remote, {
-			  method: "POST",
-			  body: formData
-			});
-		}
-
-		var result = await response.text();
-		result_container.innerHTML = `<pre style="display: block;">${result}</pre>`;
-		const downloadBtn = document.getElementById("downloadBtn");
-
-		if (! result.startsWith("ERROR:")) {
-			var lines = result_container.innerHTML.split('<br>');
-			if (lines == [result_container.innerHTML]) {
-				const lines = result_container.innerHTML.split('\n');
-			}
-			line = lines[0].replace(/<span[^>]*>([^<]{2})<\/span>/g, '$1');
-			line = line.replace(/<[^>]*>/g, '');
-			lineLength = line.length;
-			var newSize = 128 / lineLength;
-			newSize = Math.min(newSize, 4.0);
-			newSize = Math.max(newSize, 0.04);
-			result_container.style.fontSize = newSize + "em";
-
-			if (window.innerWidth >= 1024) {
-				result_container.style.fontSize = newSize * 2 + "em";
-			}
-
-			const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(result);
-			downloadBtn.href = dataUrl;
-			downloadBtn.download = format === "html/css"? "output.html" : "output.txt";
-			downloadBtn.innerText = "Download Output";
-			downloadBtn.style.display = "inline";
-
-			} else {
-				result_container.style.fontSize = "0.8em";
-				downloadBtn.style.display = "none";
-			}
+      const remote = "/ansify";
+      const format = document.getElementById("format").value;
+		  const fileInput = document.getElementById("imageFile")
+      const imageFilePath = fileInput.value;
+      const file = fileInput.files ? fileInput.files[0] : null;
+      const imageURL = document.getElementById("imageURL").value;
+      const width = document.getElementById("width").value;
+      const height = document.getElementById("height").value;
+      const characters = document.getElementById("characters").value;
+      const gallery = document.getElementById("gallery").checked;
+      var response = {
+        status: 400,
+        text: async() => "ERROR: Please provide a file or URL as input"
       };
+
+      var ready = true;
+      const formData = new FormData();
+      formData.append("format", format);
+      formData.append("width", width);
+      formData.append("height", height);
+      formData.append("characters", characters);
+      formData.append("gallery", gallery);
+      if (imageFilePath != "") {
+        fileInput.value = "";
+        console.log("POSTing file", imageFilePath);
+        formData.append("file", file);
+      } else if (imageURL != "") {
+        console.log("POSTing url", imageURL);
+        formData.append("url", imageURL);
+      } else {
+        ready = false;
+      }
+      if (ready) {
+        response = await fetch(remote, {
+          method: "POST",
+          body: formData
+        });
+		  }
+
+      var result = await response.text();
+      result_container.innerHTML = `<pre style="display: block;">${result}</pre>`;
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      if ( response.ok) {
+        // scale the font size of the ansified image relative to the output & viewport sizes
+        var lines = result_container.innerHTML.split('<br>');
+        if (lines == [result_container.innerHTML]) {
+          const lines = result_container.innerHTML.split('\n');
+        }
+        line = lines[0].replace(/<span[^>]*>([^<]{2})<\/span>/g, '$1');
+        line = line.replace(/<[^>]*>/g, '');
+        lineLength = line.length;
+        var newSize = 128 / lineLength;
+        newSize = Math.min(newSize, 4.0);
+        newSize = Math.max(newSize, 0.04);
+        result_container.style.fontSize = newSize + "em";
+
+        if (window.innerWidth >= 1024) {
+          result_container.style.fontSize = newSize * 2 + "em";
+        }
+
+        // download link to save the ansified image to the client machine
+        const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(result);
+        downloadBtn.href = dataUrl;
+        downloadBtn.download = format === "html/css"? "output.html" : "output.txt";
+        downloadBtn.innerText = "Download Output";
+        downloadBtn.style.display = "inline";
+
+      } else { // response is not ok
+        result_container.style.fontSize = "1em";
+        downloadBtn.style.display = "none";
+      }
+
+    }; // end of onsubmit func def
     </script>
+    <!-- /form submission script -->
+
   </body>
 </html>
 

@@ -1,10 +1,15 @@
 SHELL=/bin/bash
 
 main:
-	flask run &
+	ANSIFIER_CLOUD_DEBUG=1 flask run &
 
 kill:
-	pkill -f 'ansifier-cloud.*flask'
+	-pkill -f 'ansifier-cloud.*flask'
+
+rebuild: kill main
+
+prod:
+	flask run &
 
 test_url:
 	curl -X POST 'http://127.0.0.1:5000/ansify' \
@@ -17,6 +22,3 @@ test_file_upload:
 	-F "format=ansi-escaped" \
 	-F "characters=#" \
 	-F "width=100"
-
-
-rebuild: kill main
