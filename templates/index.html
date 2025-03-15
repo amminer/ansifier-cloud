@@ -57,6 +57,15 @@
           <input type="text" id="characters" name="characters" value="█▓▒░#≡±+÷- ">
 		</div>
 
+		<div class="optional_input">
+          <label for="library">
+		   Submit to Library:
+			  <span disabled class="tooltip" title="if checked, the result of ansification will be
+                  saved and made publicly viewable to other users">(i)</span>
+		  </label>
+          <input type="checkbox" id="library" name="library">
+		</div>
+
         <input id="submit" type="submit" value="Submit">
         <div id="result"></div>
 	      <div class="optional_input">
@@ -86,6 +95,7 @@
         const width = document.getElementById("width").value;
         const height = document.getElementById("height").value;
 		const characters = document.getElementById("characters").value;
+        const library = document.getElementById("library").checked;
 		var response = {
 			status: 400,
 			text: async() => "ERROR: Please provide a file or URL as input"
@@ -97,6 +107,7 @@
 		formData.append("width", width);
 		formData.append("height", height);
 		formData.append("characters", characters);
+		formData.append("library", library);
 		if (imageFilePath != "") {
 			fileInput.value = "";
 			console.log("POSTing file", imageFilePath);
