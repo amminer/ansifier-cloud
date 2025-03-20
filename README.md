@@ -3,7 +3,8 @@
 This is the source code for a minimal, containerized Google Cloud Run serverless function wrapping
 [ansifier](https://github.com/amminer/ansifier),
 exposing both graphical and programmatic web frontends for the function,
-as well as a gallery of user-submitted text art created on the site.
+as well as a gallery of user-submitted text art created on the site (this feature is under
+development).
 
 This project largely exists in its current form as a portfolio item, to illustrate some of my full
 stack software engineering skills. I'm currently looking for a new full time position in the SE space.
