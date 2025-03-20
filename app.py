@@ -23,8 +23,8 @@ MAX_FILESIZE_MB = 5
 MAX_FILESIZE_KB = 1000 * MAX_FILESIZE_MB
 MAX_FILESIZE_B = 1000 * MAX_FILESIZE_KB
 app = Flask('ansifier-cloud')
-#client = google.cloud.logging.Client()
-#client.setup_logging()
+debug = os.environ.get("ANSIFIER_DEBUG")
+
 def log_info(message):
     app.logger.info(message)
     logging.info(message)
@@ -49,14 +49,22 @@ def main():
 
     received_file = request.files["file"] if "file" in request.files else None
     received_url = request.form.get("url")
+    message = "Please supply a valid file or URL to ansify"
+    http_response_code = 200
 
-    if received_file is not None:
-        return file_flow(received_file, request), 200
+    try:
+        if received_file is not None:
+            message = file_flow(received_file, request)
 
-    if received_url is not None:
-        return url_flow(received_url, request), 200
+        if received_url is not None:
+            message = url_flow(received_url, request)
 
-    return "Please supply a valid file or URL to ansify", 500
+    except Exception as e:
+        http_response_code = 500
+        message = message + "\n" + str(e) if debug else message
+
+    finally:
+        return message, http_response_code
 
 
 def file_flow(received_file, request):
@@ -65,12 +73,8 @@ def file_flow(received_file, request):
     :return: str, see main
     """
     log_info(f" processing {received_file}")
-    message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
-    try:
-        message = save_image_werkzeug(received_file)
-        message = process_imagefile(request, "the file you uploaded")
-    except Exception as e:
-        message = message + "\n" + str(e)
+    message = save_image_werkzeug(received_file)
+    message = process_imagefile(request, "the file you uploaded")
     return message
 
 
@@ -80,14 +84,10 @@ def url_flow(image_url, request):
     :return: str, see main
     """
     log_info(f" processing {image_url}")
-    message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
-    try:
-        message = validate_url(image_url)
-        message = download_url(image_url)
-        message = save_image_bytes(message)
-        message = process_imagefile(request, image_url)
-    except Exception as e:
-        message = message + "\n" + str(e)
+    message = validate_url(image_url)
+    message = download_url(image_url)
+    message = save_image_bytes(message)
+    message = process_imagefile(request, image_url)
     return message
 
 
@@ -127,8 +127,7 @@ def process_imagefile(request, image_url):
 
 def save_image_werkzeug(image):
     """ saves an image to disk from a werkzeug file object """
-    log_info("werkzeug-saving image to file...")
-    message = r"failed to process image ¯\_(ツ)_/¯"
+    log_info("werkzeug-saving image to file")
     image.seek(0)
     file_size = len(image.read())
     log_info(f"received {file_size} byte image to save")
@@ -138,24 +137,18 @@ def save_image_werkzeug(image):
     image.save(IMAGE_FILEPATH)  # TODO may be reading into memory twice here
     saved_size = os.path.getsize(IMAGE_FILEPATH)
     log_info(f"saved {saved_size} bytes to {IMAGE_FILEPATH}")
-
-    message = f"Image saved to {IMAGE_FILEPATH}"
-    return message
+    return f"Image saved to {IMAGE_FILEPATH}"
 
 
 def save_image_bytes(content):
-    log_info("wb-saving image to file...")
-    message = r"failed to process image ¯\_(ツ)_/¯"
+    log_info(f"writing binary image data to file at {IMAGE_FILEPATH}")
     with open(IMAGE_FILEPATH, "wb") as wf:
         wf.write(content)
-
-    message = f"image saved to {IMAGE_FILEPATH}"
-    return message
+    return f"image saved to {IMAGE_FILEPATH}"
 
 
 def download_url(url):
     log_info(f"downloading image from {url}")
-    message = r"failed to download image ¯\_(ツ)_/¯"
     s = requests.session()
     head_raw = s.head(url)
     if head_raw.status_code < 200 or head_raw.status_code > 299:
@@ -165,23 +158,18 @@ def download_url(url):
         raise ValueError(f"File must not exceed {MAX_FILESIZE_MB} MB")
 
     content_raw = s.get(url, timeout=10)
-    message = content_raw.content
-    return message
+    return content_raw.content
 
 
 def validate_url(url):
     log_info(f"validating {url}")
-    message = r"no valid image URL provided ¯\_(ツ)_/¯"
-
     if not validators.url(url):
         raise ValueError("valid URL must be supplied")
     if not url.startswith("https"):
         raise ValueError("only HTTPS urls are allowed")
     if not any(map(lambda ex: url.endswith(ex), FILE_EXTENSIONS)):
         raise ValueError(f"file type must be one of {FILE_EXTENSIONS}")
-
-    message = f"{url} validated"
-    return message
+    return f"{url} validated"
 
 
 if __name__ == '__main__':
