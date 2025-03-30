@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
 main:
-	ANSIFIER_CLOUD_DEBUG=1 flask run &
+	ANSIFIER_DEBUG=1 flask run &
 
 kill:
 	-pkill -f 'ansifier-cloud.*flask'

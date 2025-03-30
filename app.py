@@ -1,14 +1,13 @@
-#import google.cloud.logging
 import logging
 import os
 import requests
 import validators
 
 from ansifier import ansify
-from google.cloud import vision
-from google.cloud import logging as cloud_logging
-
 from flask import Flask, request, render_template
+from sqlite3 import DatabaseError
+
+from data_model import Database
 
 
 FILE_EXTENSIONS = [ "blp", "bmp", "dds", "dib", "eps", "gif", "icns", "ico", "im", "jpeg", "jpg",
@@ -17,26 +16,27 @@ FILE_EXTENSIONS = [ "blp", "bmp", "dds", "dib", "eps", "gif", "icns", "ico", "im
                    "iptc/naa", "mcidas", "mic", "mpo", "pcd", "pixar", "psd", "qoi", "sun", "wal",
                    "wmf", "emf", "xpm", "palm", "pdf", "bufr", "grib", "hdf5", "mpeg",
 
-                   ".mp4", ".mov", ".mkv", ".avi", ".wmv", ".flv", ".mpeg", ".mpg", ".3gp", ".webm",
-                   ".ogv", ".m4v", ".ts", ".mts", ".m2ts", ".divx", ".vob", ".rm", ".rmvb", ".asf"
+                   "mp4", "mov", "mkv", "avi", "wmv", "flv", "mpeg", "mpg", "3gp", "webm",
+                   "ogv", "m4v", "ts", "mts", "m2ts", "divx", "vob", "rm", "rmvb", "asf"
                    ]
+FORMATTED_FILE_EXTENSIONS = ' '.join([ext if i % 10 else ext + '<br/>'
+                                      for i, ext in enumerate(FILE_EXTENSIONS)])
 IMAGE_FILEPATH = "IMAGEFILE"
 MAX_FILESIZE_MB = 5
 MAX_FILESIZE_KB = 1000 * MAX_FILESIZE_MB
 MAX_FILESIZE_B = 1000 * MAX_FILESIZE_KB
 app = Flask('ansifier-cloud')
-debug = os.environ.get('ANSIFIER_CLOUD_DEBUG', None)
-if not debug:
-    logging_client = cloud_logging.Client()
-    logging_client.setup_logging()
-    cloud_logger = logging_client.logger("ansifier-cloud")
+debug = os.environ.get("ANSIFIER_DEBUG")
 
 def log_info(message):
-    if not debug:
-        cloud_logger.log_text(message)
     app.logger.info(message)
     logging.info(message)
     print(message)
+
+class AnsifierError(Exception):
+    def __init__(self, message, http_code):
+        super().__init__(message)
+        self.http_code = http_code
 
 
 @app.route('/', methods=['GET'])
@@ -63,14 +63,30 @@ def main() -> (str, int):
 
     received_file = request.files["file"] if "file" in request.files else None
     received_url = request.form.get("url")
+    message = "Please supply a valid file or URL to ansify"
+    http_response_code = 200
 
-    if received_file is not None:
-        return file_flow(received_file, request)
+    try:
+        if received_file is not None:
+            message = file_flow(received_file, request)
 
-    if received_url is not None:
-        return url_flow(received_url, request)
+        if received_url is not None:
+            message = url_flow(received_url, request)
 
-    return "Please supply a valid file or URL to ansify", 400
+    except AnsifierError as e:
+        http_response_code = e.http_code
+        message = str(e)
+
+    except DatabaseError as e:
+        http_response_code = 500
+        message = 'db err: ' + str(e)
+
+    except Exception as e:  # TODO generate a crash UID and ask user to submit it
+        http_response_code = 500
+        message = str(e) if debug else "Sorry, something went wrong"
+
+    finally:
+        return message, http_response_code
 
 
 def file_flow(received_file, request):
@@ -79,15 +95,9 @@ def file_flow(received_file, request):
     :return: str, see main
     """
     log_info(f" processing {received_file}")
-    httpcode = 200
-    message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
-    try:
-        message = save_image_werkzeug(received_file)
-        message = process_imagefile(request, "the file you uploaded")
-    except Exception as e:
-        message = message + f"\n{str(e)}" if debug else ""
-        httpcode = 500
-    return message, httpcode
+    message = save_image_werkzeug(received_file)
+    message = process_imagefile(request, "the file you uploaded")
+    return message
 
 
 def url_flow(image_url, request):
@@ -96,17 +106,12 @@ def url_flow(image_url, request):
     :return: str, see main
     """
     log_info(f" processing {image_url}")
-    httpcode = 200
-    message = r"ERROR: unable to process your request ¯\_(ツ)_/¯"
-    try:
-        message = validate_url(image_url)
-        message = download_url(image_url)
-        message = save_image_bytes(message)
-        message = process_imagefile(request, image_url)
-    except Exception as e:
-        message = message + f"\n{str(e)}" if debug else ""
-        httpcode = 500
-    return message, httpcode
+    message = validate_url(image_url)
+    message = download_url(image_url)
+    message = save_image_bytes(message)
+    message = process_imagefile(request, image_url)
+    return message
+
 
     
 def process_imagefile(request, image_url):
@@ -117,11 +122,11 @@ def process_imagefile(request, image_url):
     """
     log_info(f"processing downloaded copy of {image_url}")
 
-    moderate_imagefile()
+    #moderate_imagefile()
 
     format_raw = request.form.get('format')
     characters_raw = request.form.get('characters')
-    gallery_raw = request.form.get('gallery')
+    gallery_choice_raw = request.form.get('gallery')
 
     if format_raw is None:
         format_raw = 'ansi-escaped'
@@ -142,12 +147,20 @@ def process_imagefile(request, image_url):
     width = validate_dim(request.form.get('width'))
     height = validate_dim(request.form.get('height'))
 
-    print(gallery_raw)
-    if gallery_raw == 'true':
-        pass
-        # TODO submit to gallery if requested
-    return ansify(IMAGE_FILEPATH, output_format=format_raw, chars=characters,
-                    height=height, width=width)[0]
+    try:
+        result = ansify(IMAGE_FILEPATH, output_format=format_raw, chars=characters,
+                        height=height, width=width)[0]
+    except ValueError as e:  #TODO this should be an IOError, probably need to update ansifier
+        raise AnsifierError(str(e) + f"; valid image formats are {FORMATTED_FILE_EXTENSIONS}",
+                            http_code=400)
+
+    if gallery_choice_raw:
+        db = Database()
+        db.check_schema()
+        db.insert_art(result)
+        db.close()
+
+    return result
 
 
 def moderate_imagefile():
@@ -186,27 +199,24 @@ def moderate_imagefile():
 
 def save_image_werkzeug(image):
     """ saves an image to disk from a werkzeug file object """
-    log_info("werkzeug-saving image to file...")
-
+    log_info("werkzeug-saving image to file")
     image.seek(0)
     file_size = len(image.read())
     log_info(f"received {file_size} byte image to save")
     if file_size > MAX_FILESIZE_B:
-        raise ValueError(f"File is ~{file_size/1e6} MB, must not exceed {MAX_FILESIZE_MB} MB")
-
+        raise AnsifierError(f"File is ~{file_size/1e6} MB, must not exceed {MAX_FILESIZE_MB} MB",
+                            http_code=400)
     image.seek(0)
     image.save(IMAGE_FILEPATH)  # TODO may be reading into memory twice here
     saved_size = os.path.getsize(IMAGE_FILEPATH)
     log_info(f"saved {saved_size} bytes to {IMAGE_FILEPATH}")
-
-    return f"image saved to {IMAGE_FILEPATH}"
+    return f"Image saved to {IMAGE_FILEPATH}"
 
 
 def save_image_bytes(content):
-    log_info("wb-saving image to file...")
+    log_info(f"writing binary image data to file at {IMAGE_FILEPATH}")
     with open(IMAGE_FILEPATH, "wb") as wf:
         wf.write(content)
-
     return f"image saved to {IMAGE_FILEPATH}"
 
 
@@ -216,12 +226,12 @@ def download_url(url):
     head_raw = s.head(url)
 
     if head_raw.status_code < 200 or head_raw.status_code > 299:
-        raise ValueError(f"image url returned code {head_raw.status_code} - try downloading the "
-                         "image to your device, then uploading it instead of linking to it.")
-
+        raise AnsifierError(f"image url returned code {head_raw.status_code}",
+                            http_code=500)
     size = int(head_raw.headers.get("Content-Length", 0))
     if size > MAX_FILESIZE_B:
-        raise ValueError(f"File must not exceed {MAX_FILESIZE_MB} MB")
+        raise AnsifierError(f"File must not exceed {MAX_FILESIZE_MB} MB",
+                            http_code=400)
 
     content_raw = s.get(url, timeout=10)
     return content_raw.content
@@ -229,16 +239,17 @@ def download_url(url):
 
 def validate_url(url):
     log_info(f"validating {url}")
-
     if not validators.url(url):
-        raise ValueError("valid URL must be supplied")
+        raise AnsifierError("valid URL must be supplied",
+                            http_code=400)
     if not url.startswith("https"):
-        raise ValueError("only HTTPS urls are allowed")
+        raise AnsifierError("only HTTPS urls are allowed",
+                            http_code=400)
     if not any(map(lambda ex: url.endswith(ex), FILE_EXTENSIONS)):
-        raise ValueError(f"file type must be one of {FILE_EXTENSIONS}")
-
+        raise AnsifierError(f"file type must be one of {FORMATTED_FILE_EXTENSIONS}",
+                            http_code=400)
     return f"{url} validated"
 
 
 if __name__ == '__main__':
-    app.run(debug=debug)
+    app.run()

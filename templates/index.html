@@ -13,7 +13,7 @@
       for display in text-only browsers and terminals, respectively;<br/>
       A web wrapper for
       <a href="https://github.com/amminer/ansifier" target="_blank">ansifier</a>.<br/>
-      Hover over fields for more information, or read the documentation
+      Hover over the (i) in a field's label for more information, or read the documentation
       <a href="https://github.com/amminer/ansifier-cloud/blob/main/README.md" target="_blank">here</a>.
     </p>
       
@@ -69,9 +69,7 @@
           <label for="gallery">
 		   Submit to text art gallery:
 			  <span disabled class="tooltip"
-          title="if checked, the result of ansification will be saved and made publicly viewable to
-          other users. At the time of writing, this is under development and this checkbox doesn't
-          actually do anything :)">
+          title="if checked, the result of ansification will be saved and made publicly viewable to other users. At the time of writing, this is under development and this checkbox doesn't actually do anything :)">
           (i)
         </span>
 		  </label>
@@ -94,7 +92,7 @@
 
       var result_container = document.getElementById("result");
       result_container.style.fontSize = document.body.style.fontSize;
-        result_container.innerHTML = `<pre>processing request...</pre>`;
+      result_container.innerHTML = `<pre>processing request...</pre>`;
 
       const remote = "/ansify";
       const format = document.getElementById("format").value;
@@ -139,7 +137,7 @@
       result_container.innerHTML = `<pre style="display: block;">${result}</pre>`;
       const downloadBtn = document.getElementById("downloadBtn");
 
-      if ( response.ok) {
+      if (response.ok) {
         // scale the font size of the ansified image relative to the output & viewport sizes
         var lines = result_container.innerHTML.split('<br>');
         if (lines == [result_container.innerHTML]) {
@@ -165,6 +163,7 @@
         downloadBtn.style.display = "inline";
 
       } else { // response is not ok
+        console.log("resetting result container font size, download btn display state")
         result_container.style.fontSize = "1em";
         downloadBtn.style.display = "none";
       }
