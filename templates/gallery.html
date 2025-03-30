@@ -12,6 +12,11 @@
       <h1>ansifier [gallery]</h1>
 	  <p id="description">
       This is a placeholder<br/>
+      Here are some recent ansi arts:
+      {% for art in arts %}
+        {{ art | safe }}
+      {% endfor %}
+      <br/>
       <a href="/">go back</a>
     </p>
   </body>

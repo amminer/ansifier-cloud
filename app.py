@@ -56,21 +56,18 @@ def gallery() -> (str, int):
     if uid is not found, returns a 404
     """
     uid = request.args.get('uid')
-    if uid is None:
-        return render_template('gallery.html')
-    else:
-        ret = serve_art(uid)
-        if ret == '':
-            return (f'no such art {uid}', 404)
-        return (ret, 200)
-
-
-def serve_art(uid: str) -> str:
-    #TODO templating
-    ret = ''
     db = Database()
     db.check_schema()
-    ret = db.retrieve_art(uid)
+
+    if uid is None:
+        return render_template('gallery.html', arts=db.most_recent_3())
+    else:
+        art = db.retrieve_art(uid)
+        if art == '':
+            ret = (f'no such art {uid}', 404)
+        else:
+            ret = (art, 200)
+
     db.close()
     return ret
 

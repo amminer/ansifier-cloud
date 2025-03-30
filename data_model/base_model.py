@@ -37,6 +37,13 @@ class Base_DB(ABC):
         pass
 
 
+    def most_recent_3(self) -> str:
+        """
+        read the most recent 3 gallery submissions and return them as a list
+        """
+        pass
+
+
     #TODO a few more db ops
 
 

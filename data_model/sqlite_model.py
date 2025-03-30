@@ -49,6 +49,11 @@ class Sqlite3_DB(Base_DB):
         return ret[0]
 
 
+    def most_recent_3(self):
+        ret = self.cur.execute(f"SELECT content FROM {TABLE_NAME} ORDER BY timestamp DESC LIMIT 3;")
+        return [a[0] for a in ret]
+
+
     def dump_table(self):
         print('all records:')
         for record in self.cur.execute(f"SELECT * FROM {TABLE_NAME}"):
