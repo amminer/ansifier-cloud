@@ -154,11 +154,11 @@ def process_imagefile(request, image_url):
         raise AnsifierError(str(e) + f"; valid image formats are {FORMATTED_FILE_EXTENSIONS}",
                             http_code=400)
 
-    if gallery_choice_raw:
-        db = Database()
-        db.check_schema()
-        db.insert_art(result)
-        db.close()
+    #if gallery_choice_raw:
+        #db = Database()
+        #db.check_schema()
+        #db.insert_art(result)
+        #db.close()
 
     return result
 
