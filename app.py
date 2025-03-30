@@ -4,8 +4,9 @@ import requests
 import validators
 
 from ansifier import ansify
-
 from flask import Flask, request, render_template
+
+from data_model import Database
 
 
 FILE_EXTENSIONS = [ "blp", "bmp", "dds", "dib", "eps", "gif", "icns", "ico", "im", "jpeg", "jpg",
@@ -70,6 +71,10 @@ def main():
         http_response_code = e.http_code
         message = str(e)
 
+    except DatabaseError as e:
+        http_response_code = 500
+        message = 'db err: ' + str(e)
+
     except Exception as e:  # TODO generate a crash UID and ask user to submit it
         http_response_code = 500
         message = str(e) if debug else "Sorry, something went wrong"
@@ -112,6 +117,7 @@ def process_imagefile(request, image_url):
 
     format_raw = request.form.get('format')
     characters_raw = request.form.get('characters')
+    gallery_choice_raw = request.form.get('gallery')
 
     if format_raw is None:
         format_raw = 'ansi-escaped'
@@ -138,6 +144,13 @@ def process_imagefile(request, image_url):
     except ValueError as e:  #TODO this should be an IOError, probably need to update ansifier
         raise AnsifierError(str(e) + f"; valid image formats are {FORMATTED_FILE_EXTENSIONS}",
                             http_code=400)
+
+    if gallery_choice_raw:
+        db = Database()
+        db.check_schema()
+        db.insert_art(result)
+        db.close()
+
     return result
 
 
