@@ -4,7 +4,9 @@
     <title>ansifier</title>
 	  <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=yes">
+	<link rel="stylesheet" href="static/style.css">
   </head>
+
   <body>
     <div class="container">
       <h1>ansifier</h1>
@@ -22,17 +24,17 @@
       <form id="imageForm">
 		<div class="requiredSet">
 
-		<div class="input">
+      <div class="input">
           <label for="imageFile">Image File:</label>
           <input class="fileInput" type="file" id="imageFile" name="imageFile">
-		</div>
+      </div>
 
-		<span> or </span>
+      <span> or </span>
 
-		<div class="input">
-          <label for="imageURL">Image URL:</label>
-          <input class="fileInput" type="text" id="imageURL" name="imageURL">
-		</div>
+      <div class="input">
+            <label for="imageURL">Image URL:</label>
+            <input class="fileInput" type="text" id="imageURL" name="imageURL">
+      </div>
 
 		</div>
         
@@ -45,42 +47,48 @@
 		</div>
 
 		<div class="optional_input">
-          <label for="width">Output Width (min. 20, max. 1000):</label>
-          <input type="number" id="width" name="width" value=60>
+      <label for="width">Output Width (min. 20, max. 1000):</label>
+      <input type="number" id="width" name="width" value=60>
 		</div>
 
 		<div class="optional_input">
-          <label for="height">Output Height (min. 20, max. 1000):</label>
-          <input type="number" id="height" name="height" value=60>
+      <label for="height">Output Height (min. 20, max. 1000):</label>
+      <input type="number" id="height" name="height" value=60>
 		</div>
 
 		<div class="optional_input">
-          <label for="characters">
-		   Characters:
+      <label for="characters">
+		   Characters
 			  <span disabled class="tooltip"
           title="characters to be chosen from when converting regions of the image to text. Should be sorted from more opaque to less opaque in normal usage.">
           (i)
         </span>
+        :
 		  </label>
-          <input type="text" id="characters" name="characters" value="█▓▒░#≡±+÷- ">
+      <input type="text" id="characters" name="characters" value="█▓▒░#≡±+÷- ">
 		</div>
 
 		<div class="optional_input">
-          <label for="gallery">
-		   Submit to text art gallery:
+      <label for="gallery">
+		   Submit to text art gallery
 			  <span disabled class="tooltip"
           title="if checked, the result of ansification will be saved and made publicly viewable to other users. At the time of writing, this is under development and this checkbox doesn't actually do anything :)">
           (i)
         </span>
+        :
 		  </label>
-          <input type="checkbox" id="gallery" name="gallery">
+      <input type="checkbox" id="gallery" name="gallery">
 		</div>
 
         <input id="submit" type="submit" value="Submit">
         <div id="result"></div>
-	      <div class="optional_input">
-		    <a id="downloadBtn" style="display: none;">Download Output</a>
-	      </div>
+        <div id="uid-container" class="optional_input" style="display: none;">
+          view your output with unique ID
+          <a id="uid" target="_blank"></a>
+        </div>
+        <div class="optional_input">
+          <a id="downloadBtn" style="display: none;">Download Output</a>
+        </div>
 	    </div>
       </form>
 
@@ -92,7 +100,9 @@
 
       var result_container = document.getElementById("result");
       result_container.style.fontSize = document.body.style.fontSize;
-      result_container.innerHTML = `<pre>processing request...</pre>`;
+
+      var uid_container = document.getElementById("uid-container");
+      var uid_link = document.getElementById("uid");
 
       const remote = "/ansify";
       const format = document.getElementById("format").value;
@@ -133,11 +143,26 @@
         });
 		  }
 
+      result_container.innerHTML = `<pre>processing request...</pre>`;
       var result = await response.text();
-      result_container.innerHTML = `<pre style="display: block;">${result}</pre>`;
-      const downloadBtn = document.getElementById("downloadBtn");
 
       if (response.ok) {
+        if (gallery) {  // last line of result will be a uid
+          console.log("before gallery:")
+          console.log(result)
+          lines = result.split('\n');
+          uid = lines[lines.length - 1];
+          lines.pop();
+          result = lines.join('\n');
+          console.log("after gallery:")
+          console.log(result)
+          uid_link.innerHTML = `${uid}`;
+          uid_link.href = `/gallery?uid=${uid}`;
+          uid_container.style.display = "block";
+        } else {
+          uid_container.style.display = "none";
+        }
+
         // scale the font size of the ansified image relative to the output & viewport sizes
         var lines = result_container.innerHTML.split('<br>');
         if (lines == [result_container.innerHTML]) {
@@ -157,6 +182,7 @@
 
         // download link to save the ansified image to the client machine
         const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(result);
+        const downloadBtn = document.getElementById("downloadBtn");
         downloadBtn.href = dataUrl;
         downloadBtn.download = format === "html/css"? "output.html" : "output.txt";
         downloadBtn.innerText = "Download Output";
@@ -166,49 +192,13 @@
         console.log("resetting result container font size, download btn display state")
         result_container.style.fontSize = "1em";
         downloadBtn.style.display = "none";
+        uid_container.style.display = "none";
       }
 
+      result_container.innerHTML = `<pre style="display: block;">${result}</pre>`;
     }; // end of onsubmit func def
     </script>
     <!-- /form submission script -->
 
   </body>
 </html>
-
-<style>
-
-body {
-	background: #011;
-	color: #FFD;
-	min-width: 245px;
-}
-
-.requiredSet {
-	padding: 1em;
-	width: 100% - 2em;
-	border-style: solid;
-	border-width: 1px;
-}
-
-form {
-    max-width: 1080px;
-}
-
-form > * {
-	padding: 0.5em 0em;
-}
-
-#imageURL {
-    width: auto;
-}
-
-#submit {
-	padding: 0.2em 1em;
-}
-
-#result {
-	padding: 20px 0em;
-    font-size: 2em;
-}
-
-</style>

@@ -1,0 +1,56 @@
+from abc import ABC, abstractmethod
+import time
+import uuid
+
+
+DB_NAME = 'test.db'
+TABLE_NAME = 'art'
+TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, timestamp)'
+
+
+class Base_DB(ABC):
+
+    @abstractmethod
+    def check_schema(self) -> None:
+        """
+        ensure there's only one table, art
+        with fields content, timestamp; create it if the db is empty
+        raises an exception if the db is out of order TODO DatabaseException wrapper
+        """
+        pass
+
+
+    @abstractmethod
+    def insert_art(self, art: str) -> str:
+        """
+        add a row to the database, one piece of ansi art
+        """
+        pass
+
+
+    @abstractmethod
+    def retrieve_art(self, uid: str) -> str:
+        """
+        read the art out of the given uid
+        returns the empty string on failed queries
+        """
+        pass
+
+
+    #TODO a few more db ops
+
+
+    @abstractmethod
+    def dump_table(self) -> None:
+        """
+        print the contents of the db to the console
+        """
+        pass
+
+
+    @abstractmethod
+    def close(self) -> None:
+        """
+        terminate database connections
+        """
+        pass

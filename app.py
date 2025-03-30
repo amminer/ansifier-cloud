@@ -21,12 +21,15 @@ FILE_EXTENSIONS = [ "blp", "bmp", "dds", "dib", "eps", "gif", "icns", "ico", "im
                    ]
 FORMATTED_FILE_EXTENSIONS = ' '.join([ext if i % 10 else ext + '<br/>'
                                       for i, ext in enumerate(FILE_EXTENSIONS)])
-IMAGE_FILEPATH = "IMAGEFILE"
+IMAGE_FILEPATH = 'IMAGEFILE'
 MAX_FILESIZE_MB = 5
 MAX_FILESIZE_KB = 1000 * MAX_FILESIZE_MB
 MAX_FILESIZE_B = 1000 * MAX_FILESIZE_KB
+MAX_DIM = 333
+MIN_DIM = 4
 app = Flask('ansifier-cloud')
-debug = os.environ.get("ANSIFIER_DEBUG")
+debug = os.environ.get('ANSIFIER_DEBUG')
+
 
 def log_info(message):
     app.logger.info(message)
@@ -41,8 +44,35 @@ class AnsifierError(Exception):
 
 @app.route('/', methods=['GET'])
 def serve_UI():
-    log_info("serving UI")
-    return render_template("index.html")
+    log_info('serving UI')
+    return render_template('index.html')
+
+
+@app.route('/gallery', methods=['GET'])
+def gallery() -> (str, int):
+    """
+    if no arguments are provided, loads some recent database entries
+    uid arg retrieves a specific string of content from the db
+    if uid is not found, returns a 404
+    """
+    uid = request.args.get('uid')
+    if uid is None:
+        return render_template('gallery.html')
+    else:
+        ret = serve_art(uid)
+        if ret == '':
+            return (f'no such art {uid}', 404)
+        return (ret, 200)
+
+
+def serve_art(uid: str) -> str:
+    #TODO templating
+    ret = ''
+    db = Database()
+    db.check_schema()
+    ret = db.retrieve_art(uid)
+    db.close()
+    return ret
 
 
 @app.route('/ansify', methods=['POST'])
@@ -59,11 +89,11 @@ def main() -> (str, int):
 
     *_flow functions MUST return the message and an HTTP response code as a pair
     """
-    log_info(f"entered main with file \"{request.files}\" & url \"{request.form.get('url')}\"")
+    log_info(f'entered main with file "{request.files}" & url "{request.form.get("url")}"')
 
-    received_file = request.files["file"] if "file" in request.files else None
-    received_url = request.form.get("url")
-    message = "Please supply a valid file or URL to ansify"
+    received_file = request.files['file'] if 'file' in request.files else None
+    received_url = request.form.get('url')
+    message = 'Please supply a valid file or URL to ansify'
     http_response_code = 200
 
     try:
@@ -83,7 +113,7 @@ def main() -> (str, int):
 
     except Exception as e:  # TODO generate a crash UID and ask user to submit it
         http_response_code = 500
-        message = str(e) if debug else "Sorry, something went wrong"
+        message = str(e) if debug else 'Sorry, something went wrong'
 
     finally:
         return message, http_response_code
@@ -94,9 +124,9 @@ def file_flow(received_file, request):
     :param received_file: werkzeug.FileStorage
     :return: str, see main
     """
-    log_info(f" processing {received_file}")
+    log_info(f' processing {received_file}')
     message = save_image_werkzeug(received_file)
-    message = process_imagefile(request, "the file you uploaded")
+    message = process_imagefile(request, 'the file you uploaded')
     return message
 
 
@@ -105,7 +135,7 @@ def url_flow(image_url, request):
     :param image_url: str
     :return: str, see main
     """
-    log_info(f" processing {image_url}")
+    log_info(f' processing {image_url}')
     message = validate_url(image_url)
     message = download_url(image_url)
     message = save_image_bytes(message)
@@ -120,7 +150,7 @@ def process_imagefile(request, image_url):
     :param image_url: str, only used for logging
     :return: str, see main
     """
-    log_info(f"processing downloaded copy of {image_url}")
+    log_info(f'processing downloaded copy of {image_url}')
 
     #moderate_imagefile()
 
@@ -137,11 +167,11 @@ def process_imagefile(request, image_url):
 
     def validate_dim(dim):
         if dim is None:
-            dim = 20
+            dim = MIN_DIM
         else:
             dim = int(dim)
-            if dim > 1000:
-                dim = 1000
+            if dim > MAX_DIM:
+                dim = MAX_DIM
         return dim
 
     width = validate_dim(request.form.get('width'))
@@ -151,14 +181,17 @@ def process_imagefile(request, image_url):
         result = ansify(IMAGE_FILEPATH, output_format=format_raw, chars=characters,
                         height=height, width=width)[0]
     except ValueError as e:  #TODO this should be an IOError, probably need to update ansifier
-        raise AnsifierError(str(e) + f"; valid image formats are {FORMATTED_FILE_EXTENSIONS}",
+        raise AnsifierError(str(e) + f'; valid image formats are {FORMATTED_FILE_EXTENSIONS}',
                             http_code=400)
 
-    #if gallery_choice_raw:
-        #db = Database()
-        #db.check_schema()
-        #db.insert_art(result)
-        #db.close()
+    if gallery_choice_raw:
+        db = Database()
+        db.check_schema()
+        uid = db.insert_art(result, format_raw)  # TODO err handling
+        db.close()
+        # last line of result is uid when gallery submission is requested
+        result = result + '\n' + uid
+        
 
     return result
 
@@ -170,7 +203,7 @@ def moderate_imagefile():
     :param image_url: str, only used for logging
     :return: None
     """
-    log_info("moderating locally stored image file")
+    log_info('moderating locally stored image file')
     image = vision.Image()
     vision_client = vision.ImageAnnotatorClient()
 
@@ -179,58 +212,58 @@ def moderate_imagefile():
     response = vision_client.safe_search_detection(image=image)
     if response.error.message:
         raise Exception(
-            "{}\nFor more info on error messages, check: "
-            "https://cloud.google.com/apis/design/errors".format(response.error.message)
+            '{}\nFor more info on error messages, check: '
+            'https://cloud.google.com/apis/design/errors'.format(response.error.message)
         )
 
     safe = response.safe_search_annotation
     # Names of likelihood from google.cloud.vision.enums
-    #"UNKNOWN",  # 0
-    #"VERY_UNLIKELY",  # 1
-    #"UNLIKELY",  # 2
-    #"POSSIBLE",  # 3
-    #"LIKELY",  # 4
-    #"VERY_LIKELY",  # 5
+    #'UNKNOWN',  # 0
+    #'VERY_UNLIKELY',  # 1
+    #'UNLIKELY',  # 2
+    #'POSSIBLE',  # 3
+    #'LIKELY',  # 4
+    #'VERY_LIKELY',  # 5
     #safe.adult, medical, spoofed, violence, racy
     if safe.violence > 3:
-        raise Exception("Detected violence in image - service refused")
+        raise Exception('Detected violence in image - service refused')
     # TODO anything else to restrict?
 
 
 def save_image_werkzeug(image):
     """ saves an image to disk from a werkzeug file object """
-    log_info("werkzeug-saving image to file")
+    log_info('werkzeug-saving image to file')
     image.seek(0)
     file_size = len(image.read())
-    log_info(f"received {file_size} byte image to save")
+    log_info(f'received {file_size} byte image to save')
     if file_size > MAX_FILESIZE_B:
-        raise AnsifierError(f"File is ~{file_size/1e6} MB, must not exceed {MAX_FILESIZE_MB} MB",
+        raise AnsifierError(f'File is ~{file_size/1e6} MB, must not exceed {MAX_FILESIZE_MB} MB',
                             http_code=400)
     image.seek(0)
     image.save(IMAGE_FILEPATH)  # TODO may be reading into memory twice here
     saved_size = os.path.getsize(IMAGE_FILEPATH)
-    log_info(f"saved {saved_size} bytes to {IMAGE_FILEPATH}")
-    return f"Image saved to {IMAGE_FILEPATH}"
+    log_info(f'saved {saved_size} bytes to {IMAGE_FILEPATH}')
+    return f'Image saved to {IMAGE_FILEPATH}'
 
 
 def save_image_bytes(content):
-    log_info(f"writing binary image data to file at {IMAGE_FILEPATH}")
-    with open(IMAGE_FILEPATH, "wb") as wf:
+    log_info(f'writing binary image data to file at {IMAGE_FILEPATH}')
+    with open(IMAGE_FILEPATH, 'wb') as wf:
         wf.write(content)
-    return f"image saved to {IMAGE_FILEPATH}"
+    return f'image saved to {IMAGE_FILEPATH}'
 
 
 def download_url(url):
-    log_info(f"downloading image from {url}")
+    log_info(f'downloading image from {url}')
     s = requests.session()
     head_raw = s.head(url)
 
     if head_raw.status_code < 200 or head_raw.status_code > 299:
-        raise AnsifierError(f"image url returned code {head_raw.status_code}",
+        raise AnsifierError(f'image url returned code {head_raw.status_code}',
                             http_code=500)
-    size = int(head_raw.headers.get("Content-Length", 0))
+    size = int(head_raw.headers.get('Content-Length', 0))
     if size > MAX_FILESIZE_B:
-        raise AnsifierError(f"File must not exceed {MAX_FILESIZE_MB} MB",
+        raise AnsifierError(f'File must not exceed {MAX_FILESIZE_MB} MB',
                             http_code=400)
 
     content_raw = s.get(url, timeout=10)
@@ -238,17 +271,17 @@ def download_url(url):
 
 
 def validate_url(url):
-    log_info(f"validating {url}")
+    log_info(f'validating {url}')
     if not validators.url(url):
-        raise AnsifierError("valid URL must be supplied",
+        raise AnsifierError('valid URL must be supplied',
                             http_code=400)
-    if not url.startswith("https"):
-        raise AnsifierError("only HTTPS urls are allowed",
+    if not url.startswith('https'):
+        raise AnsifierError('only HTTPS urls are allowed',
                             http_code=400)
     if not any(map(lambda ex: url.endswith(ex), FILE_EXTENSIONS)):
-        raise AnsifierError(f"file type must be one of {FORMATTED_FILE_EXTENSIONS}",
+        raise AnsifierError(f'file type must be one of {FORMATTED_FILE_EXTENSIONS}',
                             http_code=400)
-    return f"{url} validated"
+    return f'{url} validated'
 
 
 if __name__ == '__main__':

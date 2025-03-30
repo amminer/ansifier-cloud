@@ -1,0 +1,33 @@
+body {
+	background: #011;
+	color: #FFD;
+	min-width: 245px;
+}
+
+.requiredSet {
+	padding: 1em;
+	width: 100% - 2em;
+	border-style: solid;
+	border-width: 1px;
+}
+
+form {
+    max-width: 1080px;
+}
+
+form > * {
+	padding: 0.5em 0em;
+}
+
+#imageURL {
+    width: auto;
+}
+
+#submit {
+	padding: 0.2em 1em;
+}
+
+#result {
+	padding: 20px 0em;
+    font-size: 2em;
+}

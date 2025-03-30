@@ -2,13 +2,15 @@ import sqlite3
 import time
 import uuid
 
+from .base_model import Base_DB
+
 
 DB_NAME = 'test.db'
 TABLE_NAME = 'art'
-TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, timestamp)'
+TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, format, timestamp)'
 
 
-class Sqlite3_DB():
+class Sqlite3_DB(Base_DB):
     def __init__(self):
         self.con = sqlite3.connect(DB_NAME)
         self.cur = self.con.cursor()
@@ -32,10 +34,19 @@ class Sqlite3_DB():
         print('ready to begin database operations')
 
 
-    def insert_art(self, art: str):
+    def insert_art(self, art: str, format: str) -> str:
         timestamp = time.time()
-        self.cur.execute(f"INSERT INTO {TABLE_SCHEMA} VALUES(?, ?, ?)", (str(uuid.uuid4()), art, timestamp))
+        uid = str(uuid.uuid4())
+        self.cur.execute(f"INSERT INTO {TABLE_SCHEMA} VALUES(?, ?, ?, ?)", (uid, art, format, timestamp))
         self.con.commit()
+        return uid
+
+
+    def retrieve_art(self, uid: str):
+        ret = self.cur.execute(f"SELECT content FROM {TABLE_NAME} WHERE uid='{uid}'").fetchone()
+        if ret is None:
+            return ''
+        return ret[0]
 
 
     def dump_table(self):
@@ -51,6 +62,7 @@ class Sqlite3_DB():
 if __name__ == '__main__':
     db = Sqlite3_DB()
     db.check_schema()
-    db.insert_art('thisisatest')
+    uid = db.insert_art('thisisatest', 'html/css')
+    print(uid, "inserted")
     db.dump_table()
     db.close()
