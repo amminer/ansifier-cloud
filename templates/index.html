@@ -21,19 +21,23 @@
       
 	  <!-- form -->
 
-      <form id="imageForm">
+    <form id="imageForm">
 		<div class="requiredSet">
-
       <div class="input">
-          <label for="imageFile">Image File:</label>
-          <input class="fileInput" type="file" id="imageFile" name="imageFile">
+        <label for="imageFile">Image File:</label>
+        <input class="fileInput" type="file" id="imageFile" name="imageFile">
       </div>
 
       <span> or </span>
 
       <div class="input">
-            <label for="imageURL">Image URL:</label>
-            <input class="fileInput" type="text" id="imageURL" name="imageURL">
+        <label for="imageURL">Image URL
+          <span disabled class="tooltip"
+           title="most image hosts don't like receiving traffic from the cloud, where this application is running - if the URL doesn't work, try downloading the image to your machine, then uploading it using the Image File input.">
+            (i)
+          </span>:
+        </label>
+        <input class="fileInput" type="text" id="imageURL" name="imageURL">
       </div>
 
 		</div>
@@ -56,41 +60,36 @@
       <input type="number" id="height" name="height" value=60>
 		</div>
 
-		<div class="optional_input">
+	  <div class="optional_input">
       <label for="characters">
 		   Characters
 			  <span disabled class="tooltip"
           title="characters to be chosen from when converting regions of the image to text. Should be sorted from more opaque to less opaque in normal usage.">
           (i)
-        </span>
-        :
-		  </label>
+        </span>:</label>
       <input type="text" id="characters" name="characters" value="█▓▒░#≡±+÷- ">
-		</div>
+	  </div>
 
-		<div class="optional_input">
+	  <div class="optional_input">
       <label for="gallery">
-		   Submit to text art gallery
-			  <span disabled class="tooltip"
-          title="if checked, the result of ansification will be saved and made publicly viewable to other users. At the time of writing, this is under development and this checkbox doesn't actually do anything :)">
-          (i)
-        </span>
-        :
-		  </label>
+        Submit to text art gallery
+          <span disabled class="tooltip"
+           title="if checked, the result of ansification will be saved and made publicly viewable to other users. At the time of writing, this is under development and this checkbox doesn't actually do anything :)">
+            (i)
+          </span>:
+      </label>
       <input type="checkbox" id="gallery" name="gallery">
-		</div>
+	  </div>
 
-        <input id="submit" type="submit" value="Submit">
-        <div id="result"></div>
-        <div id="uid-container" class="optional_input" style="display: none;">
-          view your output with unique ID
-          <a id="uid" target="_blank"></a>
-        </div>
-        <div class="optional_input">
-          <a id="downloadBtn" style="display: none;">Download Output</a>
-        </div>
-	    </div>
-      </form>
+    <input id="submit" type="submit" value="Submit">
+      <div id="result"></div>
+      <div id="uid-container" class="optional_input" style="display: none;">
+        view your output with unique ID <a id="uid" target="_blank"></a>
+      </div>
+      <div class="optional_input">
+        <a id="downloadBtn" style="display: none;">Download Output</a>
+      </div>
+    </form>
 
 	  <!-- /form -->
     
