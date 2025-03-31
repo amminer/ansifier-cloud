@@ -99,7 +99,6 @@
       event.preventDefault();
 
       var result_container = document.getElementById("result");
-      result_container.style.fontSize = document.body.style.fontSize;
 
       var uid_container = document.getElementById("uid-container");
       var uid_link = document.getElementById("uid");
@@ -148,14 +147,10 @@
 
       if (response.ok) {
         if (gallery) {  // last line of result will be a uid
-          console.log("before gallery:")
-          console.log(result)
           lines = result.split('\n');
           uid = lines[lines.length - 1];
           lines.pop();
           result = lines.join('\n');
-          console.log("after gallery:")
-          console.log(result)
           uid_link.innerHTML = `${uid}`;
           uid_link.href = `/gallery?uid=${uid}`;
           uid_container.style.display = "block";
@@ -170,15 +165,6 @@
         }
         line = lines[0].replace(/<span[^>]*>([^<]{2})<\/span>/g, '$1');
         line = line.replace(/<[^>]*>/g, '');
-        lineLength = line.length;
-        var newSize = 128 / lineLength;
-        newSize = Math.min(newSize, 4.0);
-        newSize = Math.max(newSize, 0.04);
-        result_container.style.fontSize = newSize + "em";
-
-        if (window.innerWidth >= 1024) {
-          result_container.style.fontSize = newSize * 2 + "em";
-        }
 
         // download link to save the ansified image to the client machine
         const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(result);
@@ -190,7 +176,6 @@
 
       } else { // response is not ok
         console.log("resetting result container font size, download btn display state")
-        result_container.style.fontSize = "1em";
         downloadBtn.style.display = "none";
         uid_container.style.display = "none";
       }
