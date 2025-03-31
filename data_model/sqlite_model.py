@@ -19,8 +19,11 @@ class Sqlite3_DB(Base_DB):
     def check_schema(self):
         # ensure there's only one table, art
         # with fields content, timestamp; create it if the db is empty
+        #
+        # the schema table's modern name is sqlite_schema, legacy name is sqlite_master
+        # GCP has an old enough version of sqlite3 (pre 3.30) that the legacy name is needed
         tables = self.cur.execute("""
-            SELECT name FROM sqlite_schema
+            SELECT name FROM sqlite_master
             WHERE type='table'
             ORDER BY name;
             """)
