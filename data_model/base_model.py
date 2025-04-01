@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-import time
-import uuid
 
 
 DB_NAME = 'test.db'

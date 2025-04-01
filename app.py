@@ -5,9 +5,9 @@ import validators
 
 from ansifier import ansify
 from flask import Flask, request, render_template
-from sqlite3 import DatabaseError
+from google.cloud import vision
 
-from data_model import Database
+from data_model import get_database
 
 
 FILE_EXTENSIONS = [ "blp", "bmp", "dds", "dib", "eps", "gif", "icns", "ico", "im", "jpeg", "jpg",
@@ -27,14 +27,19 @@ MAX_FILESIZE_KB = 1000 * MAX_FILESIZE_MB
 MAX_FILESIZE_B = 1000 * MAX_FILESIZE_KB
 MAX_DIM = 333
 MIN_DIM = 4
+
+DEBUG = os.environ.get('ANSIFIER_DEBUG')
+DATABASE_NAME = os.environ.get('ANSIFIER_DB_TYPE')
+
+
 app = Flask('ansifier-cloud')
-debug = os.environ.get('ANSIFIER_DEBUG')
 
 
 def log_info(message):
     app.logger.info(message)
     logging.info(message)
     print(message)
+
 
 class AnsifierError(Exception):
     def __init__(self, message, http_code):
@@ -56,19 +61,19 @@ def gallery() -> (str, int):
     if uid is not found, returns a 404
     """
     uid = request.args.get('uid')
-    db = Database()
-    db.check_schema()
+    DATABASE = get_database(DATABASE_NAME)
+    DATABASE.check_schema()
 
     if uid is None:
-        return render_template('gallery.html', arts=db.most_recent_3())
+        return render_template('gallery.html', arts=DATABASE.most_recent_3())
     else:
-        art = db.retrieve_art(uid)
+        art = DATABASE.retrieve_art(uid)
         if art == '':
             ret = (f'no such art {uid}', 404)
         else:
             ret = (art, 200)
 
-    db.close()
+    DATABASE.close()
     return ret
 
 
@@ -90,7 +95,7 @@ def main() -> (str, int):
 
     received_file = request.files['file'] if 'file' in request.files else None
     received_url = request.form.get('url')
-    message = 'Please supply a valid file or URL to ansify'
+    #message = 'Please supply a valid file or URL to ansify'
     http_response_code = 200
 
     try:
@@ -104,13 +109,9 @@ def main() -> (str, int):
         http_response_code = e.http_code
         message = str(e)
 
-    except DatabaseError as e:
+    except Exception as e:  # TODO generate a crash report and ask user to submit it
         http_response_code = 500
-        message = 'db err: ' + str(e)
-
-    except Exception as e:  # TODO generate a crash UID and ask user to submit it
-        http_response_code = 500
-        message = str(e) if debug else 'Sorry, something went wrong'
+        message = str(e) if DEBUG else 'Sorry, something went wrong'
 
     finally:
         return message, http_response_code
@@ -182,13 +183,12 @@ def process_imagefile(request, image_url):
                             http_code=400)
 
     if gallery_choice_raw:
-        db = Database()
-        db.check_schema()
-        uid = db.insert_art(result, format_raw)  # TODO err handling
-        db.close()
+        DATABASE = get_database(DATABASE_NAME)
+        DATABASE.check_schema()
+        uid = DATABASE.insert_art(result, format_raw)  # TODO err handling
         # last line of result is uid when gallery submission is requested
         result = result + '\n' + uid
-        
+        DATABASE.close()
 
     return result
 

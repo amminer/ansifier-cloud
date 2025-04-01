@@ -1,4 +1,5 @@
-import sqlite3
+import os
+import sqlalchemy
 import time
 import uuid
 
@@ -10,10 +11,9 @@ TABLE_NAME = 'art'
 TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, format, timestamp)'
 
 
-class Sqlite3_DB(Base_DB):
+class Gcp_Cloudsql_DB(Base_DB):
     def __init__(self):
-        self.con = sqlite3.connect(DB_NAME)
-        self.cur = self.con.cursor()
+        self.pool = connect_to_gcp_cloudsql()
 
     def check_schema(self):
         """
@@ -65,10 +65,39 @@ class Sqlite3_DB(Base_DB):
         self.con.close()
 
 
-if __name__ == '__main__':
-    db = Sqlite3_DB()
-    db.check_schema()
-    uid = db.insert_art('thisisatest', 'html/css')
-    print(uid, "inserted")
-    db.dump_table()
-    db.close()
+#if __name__ == '__main__':
+    #db = Sqlite3_DB()
+    #db.check_schema()
+    #uid = db.insert_art('thisisatest', 'html/css')
+    #print(uid, "inserted")
+    #db.dump_table()
+    #db.close()
+
+def connect_to_gcp_cloudsql() -> sqlalchemy.engine.base.Engine:
+    """Initializes a TCP connection pool for a Cloud SQL instance of MySQL."""
+    # Note: Saving credentials in environment variables is convenient, but not
+    # secure - consider a more secure solution such as
+    # Cloud Secret Manager (https://cloud.google.com/secret-manager) to help
+    # keep secrets safe.
+    db_host = os.environ[
+        "INSTANCE_HOST"
+    ]  # e.g. '127.0.0.1' ('172.17.0.1' if deployed to GAE Flex)
+    db_user = os.environ["DB_USER"]  # e.g. 'my-db-user'
+    db_pass = os.environ["DB_PASS"]  # e.g. 'my-db-password'
+    db_name = os.environ["DB_NAME"]  # e.g. 'my-database'
+    db_port = os.environ["DB_PORT"]  # e.g. 3306
+
+    pool = sqlalchemy.create_engine(
+        # Equivalent URL:
+        # mysql+pymysql://<db_user>:<db_pass>@<db_host>:<db_port>/<db_name>
+        sqlalchemy.engine.url.URL.create(
+            drivername="mysql+pymysql",
+            username=db_user,
+            password=db_pass,
+            host=db_host,
+            port=db_port,
+            database=db_name,
+        ),
+        # ...
+    )
+    return pool
