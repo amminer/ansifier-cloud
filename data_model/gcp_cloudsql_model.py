@@ -11,14 +11,17 @@ class Gcp_Cloudsql_DB(Base_DB):
 
     def insert_art(self, art: str) -> str:
         pass  #TODO
+        return 'THISISATEST'
 
 
     def retrieve_art(self, uid: str) -> str:
         pass  #TODO
+        return 'THISISATEST'
 
 
     def most_recent_3(self) -> str:
         pass  #TODO
+        return 'THISISATEST'
 
 
     def dump_table(self) -> None:
