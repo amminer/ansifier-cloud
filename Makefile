@@ -5,6 +5,7 @@ main:
 
 kill:
 	-pkill -f 'ansifier-cloud.*flask'
+	-pkill -f 'gunicorn*'
 
 rebuild: kill main
 
