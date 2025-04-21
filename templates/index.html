@@ -97,14 +97,14 @@
     <script> document.getElementById("imageForm").onsubmit = async function(event) {
       event.preventDefault();
 
-      var result_container = document.getElementById("result");
-
-      var uid_container = document.getElementById("uid-container");
-      var uid_link = document.getElementById("uid");
+      let result_container = document.getElementById("result");
+      let uid_container = document.getElementById("uid-container");
+      let uid_link = document.getElementById("uid");
+      let response = null;
 
       const remote = "/ansify";
       const format = document.getElementById("format").value;
-		  const fileInput = document.getElementById("imageFile")
+	  const fileInput = document.getElementById("imageFile")
       const imageFilePath = fileInput.value;
       const file = fileInput.files ? fileInput.files[0] : null;
       const imageURL = document.getElementById("imageURL").value;
@@ -112,12 +112,7 @@
       const height = document.getElementById("height").value;
       const characters = document.getElementById("characters").value;
       const gallery = document.getElementById("gallery").checked;
-      var response = {
-        status: 400,
-        text: async() => "ERROR: Please provide a file or URL as input"
-      };
 
-      var ready = true;
       const formData = new FormData();
       formData.append("format", format);
       formData.append("width", width);
@@ -132,21 +127,26 @@
         console.log("POSTing url", imageURL);
         formData.append("url", imageURL);
       } else {
-        ready = false;
+        response = {
+          status: 400,
+          text: async() => "Please provide a file or URL as input"
+        };
       }
-      if (ready) {
+      if (response === null) {
         response = await fetch(remote, {
           method: "POST",
           body: formData
         });
-		  }
+	  }
 
       result_container.innerHTML = `<pre>processing request...</pre>`;
-      var result = await response.text();
+      let result = await response.text();
 
       if (response.ok) {
+
+        console.log("gallery: " + gallery);
         if (gallery) {  // last line of result will be a uid
-          lines = result.split('\n');
+          let lines = result.split('\n');
           uid = lines[lines.length - 1];
           lines.pop();
           result = lines.join('\n');
@@ -157,14 +157,6 @@
           uid_container.style.display = "none";
         }
 
-        // scale the font size of the ansified image relative to the output & viewport sizes
-        var lines = result_container.innerHTML.split('<br>');
-        if (lines == [result_container.innerHTML]) {
-          const lines = result_container.innerHTML.split('\n');
-        }
-        line = lines[0].replace(/<span[^>]*>([^<]{2})<\/span>/g, '$1');
-        line = line.replace(/<[^>]*>/g, '');
-
         // download link to save the ansified image to the client machine
         const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(result);
         const downloadBtn = document.getElementById("downloadBtn");
@@ -174,7 +166,6 @@
         downloadBtn.style.display = "inline";
 
       } else { // response is not ok
-        console.log("resetting result container font size, download btn display state")
         downloadBtn.style.display = "none";
         uid_container.style.display = "none";
       }

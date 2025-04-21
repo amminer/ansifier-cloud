@@ -1,11 +1,12 @@
 import logging
 import os
 import requests
+import traceback
 import validators
 
 from ansifier import ansify
 from flask import Flask, request, render_template
-from sqlite3 import DatabaseError
+from logging.handlers import RotatingFileHandler
 
 from data_model import Database
 
@@ -30,11 +31,28 @@ MIN_DIM = 4
 app = Flask('ansifier-cloud')
 debug = os.environ.get('ANSIFIER_DEBUG')
 
+if debug:
+    # Configure rotating log handler
+    log_file = 'debug.log'
+    max_bytes = 1 * 1024 * 1024  # 1 MB
+    backup_count = 3
 
-def log_info(message):
-    app.logger.info(message)
-    logging.info(message)
-    print(message)
+    logger = logging.getLogger('debugLogger')
+    logger.setLevel(logging.DEBUG)
+
+    handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
+    formatter = logging.Formatter('%(asctime)s - %(message)s')
+    handler.setFormatter(formatter)
+
+    logger.addHandler(handler)
+
+    def log_debug(message):
+        logger.debug(message)
+else:
+    # Define a no-op function if debugging is off
+    def log_debug(message):
+        pass
+
 
 class AnsifierError(Exception):
     def __init__(self, message, http_code):
@@ -44,7 +62,7 @@ class AnsifierError(Exception):
 
 @app.route('/', methods=['GET'])
 def serve_UI():
-    log_info('serving UI')
+    log_debug('serving UI')
     return render_template('index.html')
 
 
@@ -86,7 +104,7 @@ def main() -> (str, int):
 
     *_flow functions MUST return the message and an HTTP response code as a pair
     """
-    log_info(f'entered main with file "{request.files}" & url "{request.form.get("url")}"')
+    log_debug(f'entered main with file "{request.files}" & url "{request.form.get("url")}"')
 
     received_file = request.files['file'] if 'file' in request.files else None
     received_url = request.form.get('url')
@@ -104,13 +122,11 @@ def main() -> (str, int):
         http_response_code = e.http_code
         message = str(e)
 
-    except DatabaseError as e:
-        http_response_code = 500
-        message = 'db err: ' + str(e)
-
-    except Exception as e:  # TODO generate a crash UID and ask user to submit it
+    # TODO generate a crash UID and ask user to submit it
+    except Exception as e:
         http_response_code = 500
         message = str(e) if debug else 'Sorry, something went wrong'
+        traceback.print_exc()
 
     finally:
         return message, http_response_code
@@ -121,7 +137,7 @@ def file_flow(received_file, request):
     :param received_file: werkzeug.FileStorage
     :return: str, see main
     """
-    log_info(f' processing {received_file}')
+    log_debug(f' processing {received_file}')
     message = save_image_werkzeug(received_file)
     message = process_imagefile(request, 'the file you uploaded')
     return message
@@ -132,7 +148,7 @@ def url_flow(image_url, request):
     :param image_url: str
     :return: str, see main
     """
-    log_info(f' processing {image_url}')
+    log_debug(f' processing {image_url}')
     message = validate_url(image_url)
     message = download_url(image_url)
     message = save_image_bytes(message)
@@ -147,29 +163,21 @@ def process_imagefile(request, image_url):
     :param image_url: str, only used for logging
     :return: str, see main
     """
-    log_info(f'processing downloaded copy of {image_url}')
+    log_debug(f'processing downloaded copy of {image_url}')
 
     #moderate_imagefile()
 
-    format_raw = request.form.get('format')
-    characters_raw = request.form.get('characters')
-    gallery_choice_raw = request.form.get('gallery')
+    format_raw = request.form.get('format', None)
+    characters_raw = request.form.get('characters', None)
+    gallery_choice_raw = request.form.get('gallery', None)
+    gallery_choice = True if gallery_choice_raw == 'true' else False
 
-    if format_raw is None:
+    if not format_raw:
         format_raw = 'ansi-escaped'
-    if characters_raw is None:
+    if not characters_raw:
         characters_raw = '█▓▒░ '
 
     characters = list(characters_raw)
-
-    def validate_dim(dim):
-        if dim is None:
-            dim = MIN_DIM
-        else:
-            dim = int(dim)
-            if dim > MAX_DIM:
-                dim = MAX_DIM
-        return dim
 
     width = validate_dim(request.form.get('width'))
     height = validate_dim(request.form.get('height'))
@@ -181,14 +189,14 @@ def process_imagefile(request, image_url):
         raise AnsifierError(str(e) + f'; valid image formats are {FORMATTED_FILE_EXTENSIONS}',
                             http_code=400)
 
-    if gallery_choice_raw:
+    if gallery_choice:
+        log_debug('inserting some art into the db')
         db = Database()
         db.check_schema()
         uid = db.insert_art(result, format_raw)  # TODO err handling
         db.close()
         # last line of result is uid when gallery submission is requested
         result = result + '\n' + uid
-        
 
     return result
 
@@ -200,7 +208,7 @@ def moderate_imagefile():
     :param image_url: str, only used for logging
     :return: None
     """
-    log_info('moderating locally stored image file')
+    log_debug('moderating locally stored image file')
     image = vision.Image()
     vision_client = vision.ImageAnnotatorClient()
 
@@ -224,34 +232,33 @@ def moderate_imagefile():
     #safe.adult, medical, spoofed, violence, racy
     if safe.violence > 3:
         raise Exception('Detected violence in image - service refused')
-    # TODO anything else to restrict?
 
 
 def save_image_werkzeug(image):
     """ saves an image to disk from a werkzeug file object """
-    log_info('werkzeug-saving image to file')
+    log_debug('werkzeug-saving image to file')
     image.seek(0)
     file_size = len(image.read())
-    log_info(f'received {file_size} byte image to save')
+    log_debug(f'received {file_size} byte image to save')
     if file_size > MAX_FILESIZE_B:
         raise AnsifierError(f'File is ~{file_size/1e6} MB, must not exceed {MAX_FILESIZE_MB} MB',
                             http_code=400)
     image.seek(0)
     image.save(IMAGE_FILEPATH)  # TODO may be reading into memory twice here
     saved_size = os.path.getsize(IMAGE_FILEPATH)
-    log_info(f'saved {saved_size} bytes to {IMAGE_FILEPATH}')
+    log_debug(f'saved {saved_size} bytes to {IMAGE_FILEPATH}')
     return f'Image saved to {IMAGE_FILEPATH}'
 
 
 def save_image_bytes(content):
-    log_info(f'writing binary image data to file at {IMAGE_FILEPATH}')
+    log_debug(f'writing binary image data to file at {IMAGE_FILEPATH}')
     with open(IMAGE_FILEPATH, 'wb') as wf:
         wf.write(content)
     return f'image saved to {IMAGE_FILEPATH}'
 
 
 def download_url(url):
-    log_info(f'downloading image from {url}')
+    log_debug(f'downloading image from {url}')
     s = requests.session()
     head_raw = s.head(url)
 
@@ -268,7 +275,7 @@ def download_url(url):
 
 
 def validate_url(url):
-    log_info(f'validating {url}')
+    log_debug(f'validating {url}')
     if not validators.url(url):
         raise AnsifierError('valid URL must be supplied',
                             http_code=400)
@@ -279,6 +286,16 @@ def validate_url(url):
         raise AnsifierError(f'file type must be one of {FORMATTED_FILE_EXTENSIONS}',
                             http_code=400)
     return f'{url} validated'
+
+
+def validate_dim(dim):
+    if dim is None:
+        dim = MIN_DIM
+    else:
+        dim = int(dim)
+        if dim > MAX_DIM:
+            dim = MAX_DIM
+    return dim
 
 
 if __name__ == '__main__':

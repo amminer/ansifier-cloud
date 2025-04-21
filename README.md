@@ -72,3 +72,10 @@ curl -X POST 'https://ansifier.com/ansify' \
 
 DNS is tricky and somewhat irritating to me, and this is just a fun little project,
 so the www.ansifier.com hostname is not officially supported at this point in time.
+
+You can run this locally using `python3` and `make`.
+Some environment variables are required; this list is likely to be out of date at times:
+
+* `ANSIFIER_DATABASE` tells the application which backend it should try to use; see
+  `/data_model/__init__.py`
+

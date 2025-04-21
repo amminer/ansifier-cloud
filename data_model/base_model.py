@@ -1,11 +1,10 @@
-from abc import ABC, abstractmethod
-import time
 import uuid
+from abc import ABC, abstractmethod
 
 
 DB_NAME = 'test.db'
 TABLE_NAME = 'art'
-TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, timestamp)'
+TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, format, timestamp)'
 
 
 class Base_DB(ABC):
@@ -61,3 +60,7 @@ class Base_DB(ABC):
         terminate database connections
         """
         pass
+
+    @staticmethod
+    def get_uuid() -> str:
+        return str(uuid.uuid4())

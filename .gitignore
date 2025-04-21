@@ -5,3 +5,4 @@ venv
 temp.sh
 ansifier-sa.json
 *.db
+debug.log

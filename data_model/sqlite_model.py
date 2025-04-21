@@ -1,13 +1,10 @@
 import sqlite3
 import time
-import uuid
 
-from .base_model import Base_DB
+from .base_model import Base_DB, TABLE_NAME, TABLE_SCHEMA
 
 
 DB_NAME = 'test.db'
-TABLE_NAME = 'art'
-TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, format, timestamp)'
 
 
 class Sqlite3_DB(Base_DB):
@@ -34,12 +31,11 @@ class Sqlite3_DB(Base_DB):
                 self.cur.execute(f"CREATE TABLE {TABLE_SCHEMA}")
         elif table[0] != TABLE_NAME or none is not None:
             raise sqlite3.DatabaseError(f'database has fallen out of intended schema; tables: {tables}')
-        print('ready to begin database operations')
 
 
     def insert_art(self, art: str, format: str) -> str:
         timestamp = time.time()
-        uid = str(uuid.uuid4())
+        uid = Base_DB.get_uuid()
         self.cur.execute(f"INSERT INTO {TABLE_SCHEMA} VALUES(?, ?, ?, ?)", (uid, art, format, timestamp))
         self.con.commit()
         return uid
@@ -65,12 +61,3 @@ class Sqlite3_DB(Base_DB):
 
     def close(self):
         self.con.close()
-
-
-if __name__ == '__main__':
-    db = Sqlite3_DB()
-    db.check_schema()
-    uid = db.insert_art('thisisatest', 'html/css')
-    print(uid, "inserted")
-    db.dump_table()
-    db.close()
