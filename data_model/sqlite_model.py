@@ -1,10 +1,11 @@
 import sqlite3
 import time
 
-from .base_model import Base_DB, TABLE_NAME, TABLE_SCHEMA
+from .base_model import Base_DB, TABLE_NAME
 
 
 DB_NAME = 'test.db'
+TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, format, timestamp)'  # TODO dry this out
 
 
 class Sqlite3_DB(Base_DB):
@@ -41,14 +42,14 @@ class Sqlite3_DB(Base_DB):
         return uid
 
 
-    def retrieve_art(self, uid: str):
+    def retrieve_art(self, uid: str) -> str:
         ret = self.cur.execute(f"SELECT content FROM {TABLE_NAME} WHERE uid='{uid}'").fetchone()
         if ret is None:
             return ''
         return ret[0]
 
 
-    def most_recent_3(self):
+    def most_recent_3(self) -> str:
         ret = self.cur.execute(f"SELECT content FROM {TABLE_NAME} ORDER BY timestamp DESC LIMIT 3;")
         return [a[0] for a in ret]
 

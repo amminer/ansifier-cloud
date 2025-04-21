@@ -75,6 +75,7 @@ def gallery() -> (str, int):
     """
     uid = request.args.get('uid')
     db = Database()
+    log_debug(f'checking schema with backend {db}')
     db.check_schema()
 
     if uid is None:

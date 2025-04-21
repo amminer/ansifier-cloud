@@ -4,3 +4,5 @@ functions-framework==3.*
 requests
 validators
 google-cloud-vision
+sqlalchemy
+pymysql

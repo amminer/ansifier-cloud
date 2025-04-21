@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 
 DB_NAME = 'test.db'
 TABLE_NAME = 'art'
-TABLE_SCHEMA = f'{TABLE_NAME}(uid, content, format, timestamp)'
 
 
 class Base_DB(ABC):
@@ -20,7 +19,7 @@ class Base_DB(ABC):
 
 
     @abstractmethod
-    def insert_art(self, art: str) -> str:
+    def insert_art(self, art: str, format: str) -> str:
         """
         add a row to the database, one piece of ansi art
         """

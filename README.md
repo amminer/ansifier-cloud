@@ -78,4 +78,3 @@ Some environment variables are required; this list is likely to be out of date a
 
 * `ANSIFIER_DATABASE` tells the application which backend it should try to use; see
   `/data_model/__init__.py`
-
