@@ -9,7 +9,7 @@ kill:
 rebuild: kill main
 
 prod:
-	flask run &
+	gunicorn -p :443 app:app
 
 test_url:
 	curl -X POST 'http://127.0.0.1:5000/ansify' \
