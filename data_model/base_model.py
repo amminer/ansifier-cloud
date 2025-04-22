@@ -12,7 +12,7 @@ which initializes a session for the lifetime of the object at self.session.
 
 import time
 import uuid
-from sqlalchemy import Column, Integer, String, Text, TypeDecorator
+from sqlalchemy import Column, Integer, String, Text, TypeDecorator, desc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm import sessionmaker
@@ -97,7 +97,7 @@ class Base_DB(ABC):
         """
         read the most recent 3 gallery submissions and return them as a list
         """
-        ret = self.session.query(AnsiArtRecord).limit(3).all()
+        ret = self.session.query(AnsiArtRecord).order_by(desc(AnsiArtRecord.timestamp)).limit(3).all()
         return ['<br/>' + record.uid + ':<br/>' + record.art for record in ret]
 
 
