@@ -22,10 +22,11 @@
 	  <!-- form -->
 
     <form id="imageForm">
-		<div class="requiredSet">
+	  <div class="requiredSet">
+
       <div class="input">
         <label for="imageFile">Image File:</label>
-        <input class="fileInput" type="file" id="imageFile" name="imageFile">
+        <input class="fileInput" type="file" id="imageFile" name="imageFile"/>
       </div>
 
       <span> or </span>
@@ -37,28 +38,28 @@
             (i)
           </span>:
         </label>
-        <input class="fileInput" type="text" id="imageURL" name="imageURL">
+        <input class="fileInput" type="text" id="imageURL" name="imageURL"/>
       </div>
 
-		</div>
+	  </div>
         
-		<div class="input">
+	  <div class="input">
         <label for="format">Output Format:</label>
         <select id="format" name="format" required>
           <option value="html/css">HTML/CSS</option>
           <option value="ansi-escaped">ANSI Escaped</option>
         </select>
-		</div>
+	  </div>
 
-		<div class="optional_input">
-      <label for="width">Output Width (min. 20, max. 1000):</label>
-      <input type="number" id="width" name="width" value=60>
-		</div>
+	  <div class="optional_input">
+        <label for="width">Output Width (min. 20, max. 1000):</label>
+        <input type="number" id="width" name="width" value=60 />
+	  </div>
 
-		<div class="optional_input">
-      <label for="height">Output Height (min. 20, max. 1000):</label>
-      <input type="number" id="height" name="height" value=60>
-		</div>
+	  <div class="optional_input">
+        <label for="height">Output Height (min. 20, max. 1000):</label>
+        <input type="number" id="height" name="height" value=60 />
+	  </div>
 
 	  <div class="optional_input">
       <label for="characters">
@@ -67,7 +68,7 @@
           title="characters to be chosen from when converting regions of the image to text. Should be sorted from more opaque to less opaque in normal usage.">
           (i)
         </span>:</label>
-      <input type="text" id="characters" name="characters" value="█▓▒░#≡±+÷- ">
+      <input type="text" id="characters" name="characters" value="█▓▒░#≡±+÷- "/>
 	  </div>
 
 	  <div class="optional_input">
@@ -78,20 +79,20 @@
             (i)
           </span>:
       </label>
-      <input type="checkbox" id="gallery" name="gallery">
+      <input type="checkbox" id="gallery" name="gallery"/>
 	  </div>
 
-    <input id="submit" type="submit" value="Submit">
-      <div id="result"></div>
-      <div id="uid-container" class="optional_input" style="display: none;">
-        view your output with unique ID <a id="uid" target="_blank"></a>
-      </div>
-      <div class="optional_input">
-        <a id="downloadBtn" style="display: none;">Download Output</a>
-      </div>
+      <input id="submit" type="submit" value="Submit"/>
+
     </form>
 
-	  <!-- /form -->
+    <div id="result"></div>
+    <div id="uid-container" class="optional_input" style="display: none;">
+      view your output with unique ID <a id="uid" target="_blank"></a>
+    </div>
+    <div class="optional_input">
+      <a id="downloadBtn" style="display: none;">Download Output</a>
+    </div>
     
     <!-- form submission script -->
     <script> document.getElementById("imageForm").onsubmit = async function(event) {
@@ -174,6 +175,5 @@
     }; // end of onsubmit func def
     </script>
     <!-- /form submission script -->
-
   </body>
 </html>
