@@ -4,7 +4,7 @@ from os import environ
 from .base_model import Base_DB
 
 
-class Gcp_Cloudsql_DB(Base_DB):
+class Gcp_MySQL_DB(Base_DB):
     """
     Interfaces with GCP MySQL cloud db according to the env vars below
     """

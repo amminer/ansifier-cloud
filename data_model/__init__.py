@@ -9,11 +9,11 @@ from os import environ
 from .base_model import Base_DB
 
 from .sqlite_model import Sqlite3_DB
-from .gcp_cloudsql_model import Gcp_Cloudsql_DB
+from .gcp_mysql_model import Gcp_MySQL_DB
 
 databases = {
         'Sqlite3': Sqlite3_DB,
-        'Gcp': Gcp_Cloudsql_DB
+        'Gcp': Gcp_MySQL_DB
 }
 
 
