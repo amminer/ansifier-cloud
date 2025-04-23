@@ -13,9 +13,8 @@ which initializes a session for the lifetime of the object at self.session.
 import time
 import uuid
 from sqlalchemy import Column, Integer, String, Text, TypeDecorator, desc
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.engine.base import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.dialects import mysql
 from abc import ABC
 
@@ -100,6 +99,11 @@ class Base_DB(ABC):
         ret = self.session.query(AnsiArtRecord).order_by(desc(AnsiArtRecord.timestamp)).limit(3).all()
         return ['<br/>' + record.uid + ':<br/>' + record.art for record in ret]
 
+    
+    def delete_art(self, uid: str) -> None:
+        query = self.session.query(AnsiArtRecord).filter_by(uid=uid)
+        query.delete()
+        self.session.commit()
 
     #TODO a few more db ops
 
