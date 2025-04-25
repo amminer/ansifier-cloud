@@ -3,6 +3,9 @@ SHELL=/bin/bash
 main:
 	ANSIFIER_DEBUG=1 flask run &
 
+quiet:
+	ANSIFIER_DEBUG=1 flask run >/dev/null 2>&1 &
+
 kill:
 	-pkill -f 'ansifier-cloud.*flask'
 	-pkill -f 'gunicorn*'
