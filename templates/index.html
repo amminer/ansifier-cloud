@@ -11,15 +11,17 @@
     <div class="container">
       <h1>ansifier</h1>
 	  <p id="description">
-      Convert image files to styled HTML or ansi-escaped text<br/>
-      for display in text-only browsers and terminals, respectively;<br/>
-      A web wrapper for
-      <a href="https://github.com/amminer/ansifier" target="_blank">ansifier</a>.<br/>
-      Hover over the (i) in a field's label for more information, or read the documentation
-      <a href="https://github.com/amminer/ansifier-cloud/blob/main/README.md" target="_blank">here</a>.
-    </p>
+        Convert image files to styled HTML or ansi-escaped text<br/>
+        for display in text-only browsers and terminals, respectively;<br/>
+        A web wrapper for
+        <a href="https://github.com/amminer/ansifier" target="_blank">ansifier</a>.<br/>
+        Hover over the (i) in a field's label for more information, or read the documentation
+        <a href="https://github.com/amminer/ansifier-cloud/blob/main/README.md" target="_blank">here</a>.<br/>
+        Check out the public gallery of text art made with this tool 
+        <a href="/gallery" target="_blank">here</a>!<br/>
+      </p>
       
-	  <!-- form -->
+	<!-- form -->
 
     <form id="imageForm">
 	  <div class="requiredSet">
@@ -72,14 +74,14 @@
 	  </div>
 
 	  <div class="optional_input">
-      <label for="gallery">
-        Submit to text art gallery
+      <label for="public-gallery">
+        Submit to public text art gallery
           <span disabled class="tooltip"
-           title="if checked, the result of ansification will be saved and made publicly viewable to other users. At the time of writing, this is under development and this checkbox doesn't actually do anything :)">
+           title="if checked, the result of ansification will be saved and made publicly viewable to other users">
             (i)
           </span>:
       </label>
-      <input type="checkbox" id="gallery" name="gallery"/>
+      <input type="checkbox" id="public-gallery" name="public-gallery"/>
 	  </div>
 
       <input id="submit" type="submit" value="Submit"/>
@@ -112,14 +114,18 @@
       const width = document.getElementById("width").value;
       const height = document.getElementById("height").value;
       const characters = document.getElementById("characters").value;
-      const gallery = document.getElementById("gallery").checked;
-
+      const publicGallery = document.getElementById("public-gallery").checked;
       const formData = new FormData();
+
+      result_container.innerHTML = `<pre>processing request...</pre>`;
+      downloadBtn.style.display = "none";
+      uid_container.style.display = "none";
+
       formData.append("format", format);
       formData.append("width", width);
       formData.append("height", height);
       formData.append("characters", characters);
-      formData.append("gallery", gallery);
+      formData.append("public-gallery", publicGallery);
       if (imageFilePath != "") {
         fileInput.value = "";
         console.log("POSTing file", imageFilePath);
@@ -140,13 +146,12 @@
         });
 	  }
 
-      result_container.innerHTML = `<pre>processing request...</pre>`;
       let result = await response.text();
 
       if (response.ok) {
 
-        console.log("gallery: " + gallery);
-        if (gallery) {  // last line of result will be a uid
+        console.log("public-gallery: " + publicGallery);
+        if (publicGallery) {  // last line of result will be a uid
           let lines = result.split('\n');
           uid = lines[lines.length - 1];
           lines.pop();

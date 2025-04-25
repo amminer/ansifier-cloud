@@ -1,10 +1,10 @@
 import sqlalchemy
+
 from os import environ
+from .base_model import BaseDBSession
 
-from .base_model import Base_DB
 
-
-class Gcp_MySQL_DB(Base_DB):
+class GcpMySQLDBSession(BaseDBSession):
     """
     Interfaces with GCP MySQL cloud db according to the env vars below
     """

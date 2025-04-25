@@ -88,6 +88,28 @@ def gallery() -> (str, int):
     return ret
 
 
+@app.route('/user-gallery', methods=['GET'])
+def user_gallery() -> (str, int):
+    """
+    if no arguments are provided, loads some recent database entries
+    uid arg retrieves a specific string of content from the db
+    if uid is not found, returns a 404
+    """
+    uid = request.args.get('uid')
+    db = Database()
+
+    if uid is None:
+        return render_template('gallery.html', arts=db.most_recent_3())
+    else:
+        art = db.retrieve_art(uid)
+        if art == '':
+            ret = (f'no such art {uid}', 404)
+        else:
+            ret = (art, 200)
+
+    return ret
+
+
 @app.route('/ansify', methods=['POST'])
 def main() -> (str, int):
     """
@@ -167,8 +189,8 @@ def process_imagefile(request, image_url):
 
     format_raw = request.form.get('format', None)
     characters_raw = request.form.get('characters', None)
-    gallery_choice_raw = request.form.get('gallery', None)
-    gallery_choice = True if gallery_choice_raw == 'true' else False
+    public_gallery_choice_raw = request.form.get('public-gallery', None)
+    public_gallery_choice = True if public_gallery_choice_raw == 'true' else False
 
     if not format_raw:
         format_raw = 'ansi-escaped'
@@ -187,7 +209,7 @@ def process_imagefile(request, image_url):
         raise AnsifierError(str(e) + f'; valid image formats are {FORMATTED_FILE_EXTENSIONS}',
                             http_code=400)
 
-    if gallery_choice:
+    if public_gallery_choice:
         log_debug('inserting some art into the db')
         db = Database()
         uid = db.insert_art(result, format_raw)  # TODO err handling

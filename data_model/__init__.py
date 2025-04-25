@@ -6,14 +6,14 @@ and MUST expose functions:
     ...
 """
 from os import environ
-from .base_model import Base_DB
+from .base_model import BaseDBSession
 
-from .sqlite_model import Sqlite3_DB
-from .gcp_mysql_model import Gcp_MySQL_DB
+from .sqlite_model import Sqlite3DBSession
+from .gcp_mysql_model import GcpMySQLDBSession
 
 databases = {
-        'Sqlite3': Sqlite3_DB,
-        'Gcp': Gcp_MySQL_DB
+        'Sqlite3': Sqlite3DBSession,
+        'Gcp': GcpMySQLDBSession
 }
 
 
@@ -26,4 +26,4 @@ if Database is None:
     raise ValueError(f'{database} is not a valid database name, must be one of: '
                      + ', '.join(databases.keys()))
 
-assert issubclass(Database, Base_DB)
+assert issubclass(Database, BaseDBSession)
