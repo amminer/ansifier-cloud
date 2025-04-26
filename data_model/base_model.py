@@ -96,7 +96,6 @@ class AnsiArtRecord(BaseRecord):
         ret = query.first()
         if ret is None:
             raise ValueError(f'uid {uid} not found')
-        print(f'retrieved {ret} from database')
         return ret.art  # return other columns too?
 
     def delete_art(self, uid: str) -> None:
@@ -125,11 +124,26 @@ class UserRecord(BaseRecord):
     def __repr__(self):
         return f'UserRecord(username={self.username})'
 
-    def create_user(self, username, password):
-        pass  # TODO
+    def create_user(self, username, password) -> bool:
+        """ returns whether user could be created... """
+        query = self.session.query(UserRecord).filter_by(username=username)
+        if query.first() is not None:
+            # username collision
+            return False
+        self.session.add(UserRecord(
+            username = username,
+            password_hash = generate_password_hash(password),
+            account_created_time = time.time()
+        ))
+        self.session.commit()
+        return True
 
-    def delete_user(self, password):
-        pass  # TODO
+    def delete_user(self, username):
+        query = self.session.query(UserRecord).filter_by(username=username)
+        ret = query.delete()
+        self.session.commit()
+        return ret != 0
+
 
     def login(self, username, password):
         pass  # TODO
