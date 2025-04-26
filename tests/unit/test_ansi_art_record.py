@@ -43,12 +43,12 @@ class TestAnsiArtRecord():
 
     def test_retrieve_art(self, mock_db):
         self.insert_art_raw_sql(mock_db)
-        inserted_user = self.select_art_raw_sql(TEST_ART['uid'], mock_db)
-        assert inserted_user[0] == TEST_ART['uid'],\
-            f'test setup: inserted user {TEST_ART["uid"]}'
+        inserted_art = self.select_art_raw_sql(TEST_ART['uid'], mock_db)
+        assert inserted_art[0] == TEST_ART['uid'],\
+            f'test setup: inserted art {TEST_ART["uid"]}'
         retrieved_art = mock_db.retrieve_art(TEST_ART['uid'])
         assert retrieved_art == TEST_ART['art'],\
-            f'db code retrieved {TEST_ART["art"]}, expected {retrieved_art}'
+            f'db code retrieved {retrieved_art}, expected {TEST_ART["art"]}'
 
     def test_delete_art(self, mock_db):
         self.insert_art_raw_sql(mock_db)

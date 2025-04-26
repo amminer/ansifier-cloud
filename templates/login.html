@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ansifier [login]</title>
+	  <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=yes">
+	<link rel="stylesheet" href="static/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>ansifier [login]</h1>
+      <p>Don't have an account yet? <a href="/create-account">create one</a></p>
+        {% if "username" in session %}
+          logged in as {{ username | safe }}
+        {% else %}
+
+        <div id="result"></div>
+        <form id="loginForm">
+          <label for="username"> Username: </label>
+          <input type="text" id="username" name="username" value=""/>
+
+          <label for="password"> Password: </label>
+          <input type="text" id="password" name="password" value=""/>
+
+          <input id="submit" type="submit" value="Submit"/>
+        </form>
+
+        {% endif %}
+      <br/>
+      <a href="/">go back</a>
+    </p>
+
+    <!-- form submission script -->
+    <script> document.getElementById("loginForm").onsubmit = async function(event) {
+      event.preventDefault();
+      const remote = "/login";
+      const formData = new FormData();
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      let result_container = document.getElementById("result");
+
+      formData.append("username", username);
+      formData.append("password", password);
+      result_container.innerHTML = `<pre>processing login...</pre>`;
+      response = await fetch(remote, {
+        method: "POST",
+        body: formData
+      });
+        if (response.ok) {
+            console.log('logged in successfully')
+            result_container.innerHTML = `<pre>logged in, redirecting...</pre>`;
+            setTimeout(() => {
+                window.location.href = "/"
+            }, 2000);
+        } else {
+            console.log('failed to log in')
+            result_container.innerHTML = `<pre>invalid credentials</pre>`;
+        }
+    }  // end form onsubmit func
+    </script>
+  </body>
+</html>

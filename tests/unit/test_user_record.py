@@ -90,11 +90,29 @@ class TestUserRecord():
 
     def test_login_success(self, mock_db):
         """ verify that db code can verify a user's password when it's correct """
-        pytest.skip('TODO')
+        self.insert_user_raw_sql(
+            TEST_USER['username'],
+            TEST_USER['password'],
+            mock_db)
+        assert self.select_user_raw_sql(TEST_USER['username'], mock_db) is not None,\
+            f'test setup: successfully inserted user {TEST_USER["username"]}'
+        result = mock_db.login(TEST_USER['username'], TEST_USER['password'])
+        assert result == True, f'db code verified correct password for {TEST_USER["username"]}'
+
 
     def test_login_failure(self, mock_db):
         """
         verify that db code does not verify a user when the given password is incorrect,
         as well as when an invalid username is given
         """
-        pytest.skip('TODO')
+        self.insert_user_raw_sql(
+            TEST_USER['username'],
+            TEST_USER['password'],
+            mock_db)
+        assert self.select_user_raw_sql(TEST_USER['username'], mock_db) is not None,\
+            f'test setup: successfully inserted user {TEST_USER["username"]}'
+        result = mock_db.login(TEST_USER['username'], 'thisisnottehcorrectpassword')
+        assert result == False, f'db code rejected incorrect password for {TEST_USER["username"]}'
+        # TODO should these be separate test functions?
+        result = mock_db.login('userthatdoesnotexist', 'thisisnottehcorrectpassword')
+        assert result == False, f'db code rejected invalid username'

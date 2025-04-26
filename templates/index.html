@@ -8,8 +8,8 @@
   </head>
 
   <body>
-    <div class="container">
       <h1>ansifier</h1>
+
 	  <p id="description">
         Convert image files to styled HTML or ansi-escaped text<br/>
         for display in text-only browsers and terminals, respectively;<br/>
@@ -19,6 +19,11 @@
         <a href="https://github.com/amminer/ansifier-cloud/blob/main/README.md" target="_blank">here</a>.<br/>
         Check out the public gallery of text art made with this tool 
         <a href="/gallery" target="_blank">here</a>!<br/>
+        {% if "username" in session %}
+          logged in as {{ session.username | safe }}
+        {% else %}
+          not logged in - <a href="/login">log in</a>
+        {% endif %}
       </p>
       
 	<!-- form -->
@@ -43,7 +48,7 @@
         <input class="fileInput" type="text" id="imageURL" name="imageURL"/>
       </div>
 
-	  </div>
+      </div> <!-- /requiredSet -->
         
 	  <div class="input">
         <label for="format">Output Format:</label>
@@ -84,13 +89,29 @@
       <input type="checkbox" id="public-gallery" name="public-gallery"/>
 	  </div>
 
+      {% if "username" in session %}
+	  <div class="optional_input">
+      <label for="private-gallery">
+        Submit to private text art gallery
+          <span disabled class="tooltip"
+           title="if checked, the result of ansification will be saved to a gallery only visible to the logged-in user">
+            (i)
+          </span>:
+      </label>
+      <input type="checkbox" id="private-gallery" name="private-gallery"/>
+	  </div>
+      {% endif %}
+
       <input id="submit" type="submit" value="Submit"/>
 
     </form>
 
     <div id="result"></div>
-    <div id="uid-container" class="optional_input" style="display: none;">
-      view your output with unique ID <a id="uid" target="_blank"></a>
+    <div id="public-uid-container" class="optional_input" style="display: none;">
+      view your public text art with unique ID <a id="public-uid" target="_blank"></a>
+    </div>
+    <div id="private-uid-container" class="optional_input" style="display: none;">
+      view your private text art with unique ID <a id="private-uid" target="_blank"></a>
     </div>
     <div class="optional_input">
       <a id="downloadBtn" style="display: none;">Download Output</a>
@@ -101,8 +122,10 @@
       event.preventDefault();
 
       let result_container = document.getElementById("result");
-      let uid_container = document.getElementById("uid-container");
-      let uid_link = document.getElementById("uid");
+      let public_uid_container = document.getElementById("public-uid-container");
+      let private_uid_container = document.getElementById("private-uid-container");
+      let public_uid_link = document.getElementById("public-uid");
+      let private_uid_link = document.getElementById("private-uid");
       let response = null;
 
       const remote = "/ansify";
@@ -115,17 +138,24 @@
       const height = document.getElementById("height").value;
       const characters = document.getElementById("characters").value;
       const publicGallery = document.getElementById("public-gallery").checked;
+      let privateGallery = false;
+      const privateGalleryInput = document.getElementById("private-gallery");
+      if (privateGalleryInput != null) {
+        privateGallery = privateGalleryInput.checked;
+      }
       const formData = new FormData();
 
       result_container.innerHTML = `<pre>processing request...</pre>`;
       downloadBtn.style.display = "none";
-      uid_container.style.display = "none";
+      public_uid_container.style.display = "none";
+      private_uid_container.style.display = "none";
 
       formData.append("format", format);
       formData.append("width", width);
       formData.append("height", height);
       formData.append("characters", characters);
       formData.append("public-gallery", publicGallery);
+      formData.append("private-gallery", privateGallery);
       if (imageFilePath != "") {
         fileInput.value = "";
         console.log("POSTing file", imageFilePath);
@@ -149,18 +179,23 @@
       let result = await response.text();
 
       if (response.ok) {
+        let publicUid = response.headers.get("public-uid")
+        let privateUid = response.headers.get("private-uid")
 
-        console.log("public-gallery: " + publicGallery);
-        if (publicGallery) {  // last line of result will be a uid
-          let lines = result.split('\n');
-          uid = lines[lines.length - 1];
-          lines.pop();
-          result = lines.join('\n');
-          uid_link.innerHTML = `${uid}`;
-          uid_link.href = `/gallery?uid=${uid}`;
-          uid_container.style.display = "block";
+        if (publicUid != null) {
+          public_uid_link.innerHTML = `${publicUid}`;
+          public_uid_link.href = `/gallery?uid=${publicUid}`;
+          public_uid_container.style.display = "block";
         } else {
-          uid_container.style.display = "none";
+          public_uid_container.style.display = "none";
+        }
+
+        if (privateUid != null) {
+          private_uid_link.innerHTML = `${privateUid}`;
+          private_uid_link.href = `/gallery?uid=${privateUid}`;
+          private_uid_container.style.display = "block";
+        } else {
+          private_uid_container.style.display = "none";
         }
 
         // download link to save the ansified image to the client machine
@@ -173,7 +208,8 @@
 
       } else { // response is not ok
         downloadBtn.style.display = "none";
-        uid_container.style.display = "none";
+        public_uid_container.style.display = "none";
+        private_uid_container.style.display = "none";
       }
 
       result_container.innerHTML = `<pre style="display: block;">${result}</pre>`;

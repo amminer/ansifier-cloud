@@ -68,9 +68,10 @@ class AnsiArtRecord(BaseRecord):
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
-        return f'AnsiArtRecord(uid={self.uid}, format={self.format}, timestamp={self.timestamp})'
+        return f'AnsiArtRecord(uid={self.uid}, format={self.format}, '\
+               f'user={self.user}, timestamp={self.timestamp})'
 
-    def insert_art(self, art: str, format: str, user=None) -> str:
+    def insert_art(self, art: str, format: str, user=str(None)) -> str:
         """
         add a row to the database, one piece of ansi art
         """
@@ -85,17 +86,17 @@ class AnsiArtRecord(BaseRecord):
         self.session.commit()
         return uid
 
-    def retrieve_art(self, uid: str) -> str:
+    def retrieve_art(self, uid: str, user=str(None)) -> str:
         """
         read the art out of the given uid
         returns the empty string on failed queries
         """
-        # TODO user must be None
-        # TODO add a routine for retrieving user's private rows
         query = self.session.query(AnsiArtRecord).filter_by(uid=uid)
         ret = query.first()
-        if ret is None:
-            raise ValueError(f'uid {uid} not found')
+        if ret is None\
+        or ret.user is not str(None) and ret.user != user:
+            return None
+        
         return ret.art  # return other columns too?
 
     def delete_art(self, uid: str) -> None:
@@ -103,11 +104,12 @@ class AnsiArtRecord(BaseRecord):
         query.delete()
         self.session.commit()
 
-    def most_recent_3(self) -> str:
+    def most_recent_3(self, user=None) -> str:
         """
         read the most recent 3 gallery submissions and return them as a list
         """
-        query = self.session.query(AnsiArtRecord).order_by(desc(AnsiArtRecord.timestamp)).limit(3)
+        query = self.session.query(AnsiArtRecord).filter_by(user=user)
+        query = query.order_by(desc(AnsiArtRecord.timestamp)).limit(3)
         ret = query.all()
         return ['<br/>' + record.uid + ':<br/>' + record.art for record in ret]
 
@@ -146,7 +148,14 @@ class UserRecord(BaseRecord):
 
 
     def login(self, username, password):
-        pass  # TODO
+        query = self.session.query(UserRecord).filter_by(username=username)
+        user = query.first()
+        if user is not None and check_password_hash(user.password_hash, password):
+            return True
+        return False
+
+            
+
 
     def logout(self):
         pass  # TODO

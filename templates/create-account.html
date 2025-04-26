@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ansifier [create account]</title>
+	  <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=yes">
+	<link rel="stylesheet" href="static/style.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>ansifier [create account]</h1>
+        {% if "username" in session %}
+          logged in as {{ username | safe }}
+        {% else %}
+
+        <div id="result"></div>
+        <form id="createUserForm">
+          <label for="username"> Username: </label>
+          <input type="text" id="username" name="username" value=""/>
+
+          <label for="password"> Password: </label>
+          <input type="text" id="password" name="password" value=""/>
+
+          <input id="submit" type="submit" value="Submit"/>
+        </form>
+
+        {% endif %}
+      <br/>
+      <a href="/">go back</a>
+    </p>
+
+    <!-- form submission script -->
+    <script> document.getElementById("createUserForm").onsubmit = async function(event) {
+      event.preventDefault();
+      const remote = "/create-account";
+      const formData = new FormData();
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      let result_container = document.getElementById("result");
+
+      formData.append("username", username);
+      formData.append("password", password);
+      result_container.innerHTML = `<pre>processing new account...</pre>`;
+      response = await fetch(remote, {
+        method: "POST",
+        body: formData
+      });
+        if (response.ok) {
+            result_container.innerHTML = `<pre>user created, redirecting...</pre>`;
+            setTimeout(() => {
+                window.location.href = "/login"
+            }, 2000);
+        } else {
+            result_container.innerHTML = `<pre>username already exists</pre>`;  //TODO what else?
+        }
+    }  // end form onsubmit func
+    </script>
+  </body>
+</html>
