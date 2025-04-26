@@ -22,6 +22,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 MAX_USERNAME_LEN = 30
+MAX_PASSWORD_LEN = 1024 # per https://docs.python.org/3/library/hashlib.html#hashlib.scrypt
 
 
 # MySQL Compatibility
@@ -117,7 +118,7 @@ class AnsiArtRecord(BaseRecord):
 class UserRecord(BaseRecord):
     __tablename__ = 'users'
     username = Column(String(MAX_USERNAME_LEN), primary_key=True)
-    password_hash = Column(String(150), nullable=False)
+    password_hash = Column(String(256), nullable=False)
     account_created_time = Column(Integer(), nullable=False)
     def __init__(self, session=None, *args, **kwargs):
         self.session = session
@@ -127,18 +128,23 @@ class UserRecord(BaseRecord):
         return f'UserRecord(username={self.username})'
 
     def create_user(self, username, password) -> bool:
-        """ returns whether user could be created... """
+        """ returns whether user could be created paired with a message """
+        # TODO change all db methods to return this pattern
         query = self.session.query(UserRecord).filter_by(username=username)
+        if len(username) > MAX_USERNAME_LEN:
+            return False, f'username must not exceed {MAX_USERNAME_LEN} characters in length'
+        if len(password) > MAX_PASSWORD_LEN:
+            return False, f'password must not exceed {MAX_PASSWORD_LEN} characters in length'
         if query.first() is not None:
             # username collision
-            return False
+            return False, f'username {username} is already in use'
         self.session.add(UserRecord(
             username = username,
             password_hash = generate_password_hash(password),
             account_created_time = time.time()
         ))
         self.session.commit()
-        return True
+        return True, f'user {username} successfully created'
 
     def delete_user(self, username):
         query = self.session.query(UserRecord).filter_by(username=username)

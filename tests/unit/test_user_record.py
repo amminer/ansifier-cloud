@@ -38,7 +38,8 @@ class TestUserRecord():
     def test_create_user_success(self, mock_db):
         """ verify that db code creates a user with the expected attributes """
         assertions = []  # TODO soft & hard assertions
-        mock_db.create_user(TEST_USER['username'], TEST_USER['password'])
+        result, _ = mock_db.create_user(TEST_USER['username'], TEST_USER['password'])
+        assert result, 'db reports success when creating a valid user'
         for k, v in TEST_USER.items():
             if k not in ['account_created_time', 'password']:
                 expected = v
@@ -63,7 +64,7 @@ class TestUserRecord():
             mock_db)
         assert self.select_user_raw_sql(TEST_USER['username'], mock_db) is not None,\
             f'test setup: successfully inserted user {TEST_USER["username"]}'
-        result = mock_db.create_user(TEST_USER['username'], TEST_USER['password'])
+        result, _ = mock_db.create_user(TEST_USER['username'], TEST_USER['password'])
         assert result == False, f'db code should fail to create duplicate user {TEST_USER["username"]}'
         # TODO bad passwords? Other reasons?
 

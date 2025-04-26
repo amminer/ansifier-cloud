@@ -94,10 +94,14 @@ def create_account():
         db_session = Database()
         username = request.form.get('username')
         password = request.form.get('password')
-        success = db_session.create_user(username, password)
+        success, message = db_session.create_user(username, password)
         if not success:
-            return ('login unsuccessful', 400)
+            return (f'user could not be created: {message}', 400)
         return redirect(url_for('login'))
+
+
+# TODO route/page to delete user
+
 
 @app.route('/logout', methods=['GET'])
 def logout():

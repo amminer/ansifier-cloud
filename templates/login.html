@@ -34,11 +34,15 @@
     <!-- form submission script -->
     <script> document.getElementById("loginForm").onsubmit = async function(event) {
       event.preventDefault();
+      let result_container = document.getElementById("result");
       const remote = "/login";
       const formData = new FormData();
       const username = document.getElementById("username").value;
       const password = document.getElementById("password").value;
-      let result_container = document.getElementById("result");
+      if (username == '' || password == '') {
+        result_container.innerHTML = `<pre>missing username or password</pre>`;
+        return;
+      }
 
       formData.append("username", username);
       formData.append("password", password);
