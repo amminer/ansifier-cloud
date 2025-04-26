@@ -72,7 +72,7 @@ class AnsiArtRecord(BaseRecord):
         return f'AnsiArtRecord(uid={self.uid}, format={self.format}, '\
                f'user={self.user}, timestamp={self.timestamp})'
 
-    def insert_art(self, art: str, format: str, user=str(None)) -> str:
+    def insert_art(self, art: str, format: str, user=None) -> str:
         """
         add a row to the database, one piece of ansi art
         """
@@ -87,17 +87,15 @@ class AnsiArtRecord(BaseRecord):
         self.session.commit()
         return uid
 
-    def retrieve_art(self, uid: str, user=str(None)) -> str:
+    def retrieve_art(self, uid: str, user=None) -> str:
         """
         read the art out of the given uid
         returns the empty string on failed queries
         """
         query = self.session.query(AnsiArtRecord).filter_by(uid=uid)
         ret = query.first()
-        if ret is None\
-        or ret.user is not str(None) and ret.user != user:
+        if ret is None or (ret.user is not None and user != ret.user):
             return None
-        
         return ret.art  # return other columns too?
 
     def delete_art(self, uid: str) -> None:

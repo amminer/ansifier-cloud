@@ -247,8 +247,9 @@ def process_imagefile(request, image_url):
     # if one of either galleries is chosen, that UID will be appended;
     # if both are chose, public then private UIDs will be appended.
     # UI/client has to include mirror logic, kinda sucks to maintain...
-    if public_gallery_choice:
+    if public_gallery_choice or private_gallery_choice:
         db_session = Database()
+    if public_gallery_choice:
         uid = db_session.insert_art(result, format_raw)  # TODO err handling
         headers['public-uid'] = uid
     if private_gallery_choice and 'username' in session:
