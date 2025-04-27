@@ -175,9 +175,7 @@ class BaseDBSession(ABC):
     """
     def __init__(self, engine: Engine):
         Session = sessionmaker(bind=engine)
-        print(f'made session class {Session}')
         self.session = Session()
-        print(f'initialized session {self.session}')
 
         BaseRecord.metadata.create_all(engine)
         self._records = [
