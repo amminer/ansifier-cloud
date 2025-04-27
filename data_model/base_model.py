@@ -177,7 +177,7 @@ class BaseDBSession(ABC):
         Session = sessionmaker(bind=engine)
         print(f'made session class {Session}')
         self.session = Session()
-        print(f'initialized session {session}')
+        print(f'initialized session {self.session}')
 
         BaseRecord.metadata.create_all(engine)
         self._records = [

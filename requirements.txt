@@ -1,9 +1,9 @@
 ansifier==0.1.2
-Flask
+Flask==3.1.0
 functions-framework==3.*
 requests
 validators
 google-cloud-vision
-sqlalchemy
-pymysql
-cryptography
+sqlalchemy==2.0.40
+pymysql==1.1.1
+cryptography==44.0.2
