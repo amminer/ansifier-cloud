@@ -6,4 +6,3 @@ validators
 google-cloud-vision
 sqlalchemy==2.0.40
 pymysql==1.1.1
-cryptography==44.0.2
