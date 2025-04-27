@@ -6,3 +6,4 @@ validators
 google-cloud-vision
 sqlalchemy
 pymysql
+cryptography
