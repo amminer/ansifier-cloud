@@ -15,8 +15,8 @@ class TestAnsiArtRecord():
     def insert_art_raw_sql(self, mock_db):
         TEST_ART['uid'] = str(uuid4())
         insertion_query = text(
-            f'INSERT INTO art ({", ".join(k for k in TEST_ART.keys())}) '
-            f'''VALUES ({", ".join('"' + str(v) + '"' for k, v in TEST_ART.items())});''')
+            f'INSERT INTO art ({", ".join(k for k in TEST_ART.keys() if k != "user")}) '
+            f'''VALUES ({", ".join('"' + str(v) + '"' for k, v in TEST_ART.items() if k != "user")});''')
         with mock_db.engine.connect() as con:
             con.execute(insertion_query)
             con.commit()
@@ -47,6 +47,7 @@ class TestAnsiArtRecord():
         assert inserted_art[0] == TEST_ART['uid'],\
             f'test setup: inserted art {TEST_ART["uid"]}'
         retrieved_art = mock_db.retrieve_art(TEST_ART['uid'])
+        print(retrieved_art)
         assert retrieved_art == TEST_ART['art'],\
             f'db code retrieved {retrieved_art}, expected {TEST_ART["art"]}'
 

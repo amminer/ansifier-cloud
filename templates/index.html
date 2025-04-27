@@ -20,7 +20,7 @@
         Check out the public gallery of text art made with this tool 
         <a href="/gallery" target="_blank">here</a>!<br/>
         {% if "username" in session %}
-          logged in as {{ session.username | safe }}
+          logged in as {{ session.username | safe }}; <a href="/logout">log out</a>
         {% else %}
           not logged in - <a href="/login">log in</a>
         {% endif %}
