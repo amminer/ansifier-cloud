@@ -31,15 +31,16 @@ class GcpMySQLDBSession(BaseDBSession):
             'ssl_ca': ssl_ca,
             # client cert & key would go here under ssl_cert & ssl_key
         }
-        print(f'logging into {db_host} port {db_port} with username {db_user}')
-        engine = sqlalchemy.create_engine(
-            sqlalchemy.engine.url.URL.create(
-                drivername="mysql+pymysql",
-                username=db_user,
-                password=db_pass,
-                host=db_host,
-                port=db_port,
-                database=db_name),
-            connect_args=ssl_args)
+        print('forming login URL')
+        url = sqlalchemy.engine.url.URL.create(
+            drivername="mysql+pymysql",
+            username=db_user,
+            password=db_pass,
+            host=db_host,
+            port=db_port,
+            database=db_name)
+        print(f'logging into {db_host} port {db_port} db {db_name} with username {db_user} and password {db_pass}')
+        engine = sqlalchemy.create_engine(url, connect_args=ssl_args)
+        print(f'engine {engine}')
 
         super().__init__(engine)  # opens self.session for queries
